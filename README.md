@@ -41,3 +41,11 @@ El servidor exige código de acceso, limita a 10 consultas por minuto por proces
 ## Verificación
 
 `node --test core.test.mjs server.test.mjs` comprueba migración, importación, conservación del historial, restauración, errores de almacenamiento y contrato del servidor con un proveedor simulado. Las pruebas simuladas no acreditan una conexión real a OpenAI. La navegación y persistencia se verifican también en navegador antes de publicar.
+
+## Informes mensuales (interfaz V7, datos V6 compatibles)
+
+En Progreso, elegir mes y deporte. El informe muestra sesiones, minutos, días con registros, carga estimada, promedio de RPE por sesión, gráficos por semana y deporte, tendencia de seis meses, rutinas realizadas, marcas del mes y detalle de actividades. Hay exportación CSV e impresión con gráficos para guardar como PDF mediante el navegador. No se envían datos a un servidor para generar informes.
+
+La comparación de un mes en curso usa el mismo tramo del mes anterior, limitado a los días disponibles de ese mes. Meses históricos comparan meses completos y se aclara que pueden tener distintas duraciones. Los registros con fecha futura no entran en los totales realizados. Días sin registros no se clasifican como descanso. No se calcula cumplimiento, calorías, volumen de pesas ni riesgo de lesión. Los registros antiguos sin rutina quedan identificados; los nombres históricos no se reemplazan por los del plan actual. Las marcas solo aparecen al elegir Todos los deportes, porque no tienen deporte asociado.
+
+Las pruebas adicionales se ejecutan con `node --test reports.test.mjs`. Verifican límites de fechas, años bisiestos, comparación de meses parciales, agrupación de rutinas, ausencia de cambios en datos originales, filtros y exportación CSV. `server.mjs` también sirve `reports.mjs`, `report-view.mjs` y `reports.css` al alojar la app fuera de GitHub Pages.

@@ -1,8 +1,10 @@
+import {mountReports} from './report-view.mjs?v=7';
 import {YOGA,WEEK,SPORTS} from './base.mjs';
 import {KEY,clone,uid,clean,localDate,defaults,load,commit,planChange,undoPlan,removeRoutine,parseImport,applyImport,weekSessions,validate} from './core.mjs';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let storage;try{storage=localStorage;}catch{storage={getItem(){throw Error('Almacenamiento no disponible');},setItem(){throw Error('Almacenamiento no disponible');}};}
 const initial=load(storage);let db=initial.data,blocked=!!initial.blocked,editActivity=null,editRoutine=null,importDraft=null,importGeneration=0,chat=[],token='',busy=false;
+const reports=mountReports(()=>db);
 const options=(values,selected)=>values.map(([v,label])=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(label)}</option>`).join('');
 function notice(message,error=false){$('notice').textContent=message;$('notice').classList.toggle('hide',!message);$('notice').classList.toggle('notice-error',error);}
 function save(next){if(blocked){notice('Conservamos tus datos originales. Exportalos y restaurá un respaldo válido antes de guardar cambios.',true);return false;}try{db=commit(storage,next);render();return true;}catch{notice('No se pudo guardar. El navegador puede estar sin espacio o bloquear el almacenamiento. Tus cambios anteriores siguen conservados. Exportá un respaldo.',true);return false;}}
@@ -12,6 +14,7 @@ function advice(){const sessions=weekSessions(db),sum=sessions.reduce((n,s)=>n+s
 function routineChoices(sport){const list=db.routines.filter(r=>r.sport===sport);return [['','Sin rutina / actividad libre'],...list.map(r=>[r.id,r.title])];}
 function sessionRoutineRender(){const old=$('activityRoutine').value,choices=routineChoices($('activitySport').value);$('activityRoutine').innerHTML=options(choices,choices.some(x=>x[0]===old)?old:'');$('routineHint').textContent=choices.length===1?'No hay rutinas para este deporte. Podés crear una en Mi plan.':'La rutina quedará identificada en tu historial aunque después la edites o elimines.';}
 function render(){
+ reports.render();
  renderMarksAdvice();
  const day=(new Date().getDay()+6)%7,sessions=weekSessions(db),sum=sessions.reduce((n,s)=>n+s.duration*s.rpe,0);
  $('todayDate').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});$('todayTitle').textContent=db.week[day].length?db.week[day].map(a=>a.title).join(' · '):'Sin actividad programada';$('todayDetail').textContent='Podés ajustar tu semana desde Mi plan.';$('weekLoad').textContent=sessions.length?sum:'—';$('weekSessions').textContent=sessions.length;$('routineCount').textContent=db.routines.length;$('advice').textContent=advice();
