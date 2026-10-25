@@ -3,8 +3,8 @@ import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {timingSafeEqual} from 'node:crypto';
 const root=new URL('./',import.meta.url);
-const files={'/':'index.html','/index.html':'index.html','/app.mjs':'app.mjs','/core.mjs':'core.mjs','/base.mjs':'base.mjs','/style.css':'style.css','/editor.css':'editor.css','/reports.mjs':'reports.mjs','/report-view.mjs':'report-view.mjs','/reports.css':'reports.css'};
-const types={html:'text/html; charset=utf-8',mjs:'text/javascript; charset=utf-8',css:'text/css; charset=utf-8'};
+const files={'/':'index.html','/index.html':'index.html','/app.mjs':'app.mjs','/core.mjs':'core.mjs','/base.mjs':'base.mjs','/style.css':'style.css','/editor.css':'editor.css','/reports.mjs':'reports.mjs','/report-view.mjs':'report-view.mjs','/reports.css':'reports.css','/manifest.webmanifest':'manifest.webmanifest','/app-icon.svg':'app-icon.svg','/apple-touch-icon.png':'apple-touch-icon.png','/icon-192.png':'icon-192.png','/icon-512.png':'icon-512.png','/favicon-32.png':'favicon-32.png'};
+const types={html:'text/html; charset=utf-8',mjs:'text/javascript; charset=utf-8',css:'text/css; charset=utf-8',png:'image/png',svg:'image/svg+xml',webmanifest:'application/manifest+json'};
 function equal(a,b){const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);}
 export function createAppServer(env=process.env,providerFetch=fetch){
  let requests=[];
