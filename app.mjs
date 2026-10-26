@@ -1,16 +1,18 @@
+import {mountReminders} from './reminder-view.mjs?v=12';
 import {mountRoutineEditor} from './routine-editor.mjs?v=11';
-import {mountProfile} from './profile.mjs?v=10';
+import {mountProfile} from './profile.mjs?v=12';
 import {mountRoutineExchange} from './routine-exchange.mjs?v=11';
 import {mountRpeGuide} from './rpe-guide.mjs?v=9';
 import {mountPlanShare} from './plan-share-view.mjs?v=10';
 import {mountReports} from './report-view.mjs?v=10';
 import {YOGA,WEEK,SPORTS} from './base.mjs';
-import {KEY,clone,uid,clean,localDate,defaults,load,commit,planChange,undoPlan,removeRoutine,parseImport,applyImport,weekSessions,validate} from './core.mjs?v=11';
+import {KEY,clone,uid,clean,localDate,defaults,load,commit,planChange,undoPlan,removeRoutine,parseImport,applyImport,weekSessions,validate} from './core.mjs?v=12';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let storage;try{storage=localStorage;}catch{storage={getItem(){throw Error('Almacenamiento no disponible');},setItem(){throw Error('Almacenamiento no disponible');}};}
 const initial=load(storage);let db=initial.data,blocked=!!initial.blocked,editActivity=null,editRoutine=null,importDraft=null,importGeneration=0,chat=[],token='',busy=false;
 const reports=mountReports(()=>db);
 const routineEditor=mountRoutineEditor(()=>db,save,notice);
+const reminderView=mountReminders(()=>db,save,()=>!blocked);
 const profileView=mountProfile(()=>db,save,notice,()=>!blocked);
 const rpeGuide=mountRpeGuide();
 const routineExchange=mountRoutineExchange(()=>db,(routines,name)=>{importDraft=routines;renderImport(name);go('ajustes');$('importPreview').scrollIntoView({block:'start'});},notice);
@@ -25,6 +27,7 @@ function routineChoices(sport){const list=db.routines.filter(r=>r.sport===sport)
 function sessionRoutineRender(){const old=$('activityRoutine').value,choices=routineChoices($('activitySport').value);$('activityRoutine').innerHTML=options(choices,choices.some(x=>x[0]===old)?old:'');$('routineHint').textContent=choices.length===1?'No hay rutinas para este deporte. Podés crear una en Mi plan.':'La rutina quedará identificada en tu historial aunque después la edites o elimines.';}
 function render(){
  profileView.render();
+ reminderView.render();
  routineExchange.render();
  planSharing.render();
  reports.render();

@@ -93,3 +93,6 @@ El editor separa nombre, series, repeticiones/rango y objetivo de esfuerzo: sin 
 Los ejercicios conservan los dos primeros valores `[nombre, detalle]` para compatibilidad y pueden añadir un tercer objeto de prescripción estructurada. Normalizar, respaldar e intercambiar rutinas conserva ese objeto y genera un detalle legible para PDF/texto. Pruebas: exercise-data.test.mjs. La barra inferior duplicada se quitó: en móvil queda la navegación superior.
 
 Apple Health no está conectado en esta web. Leer pasos mediante HealthKit requiere una app/puente nativo y autorización del usuario para ese tipo de dato. No se muestran pasos simulados ni se pide un permiso de HealthKit desde Safari. Esa integración queda para una versión de iOS, fuera de estos cambios web.
+
+
+V12: acceso a editar perfil junto a la versión. Preferencias de recordatorios locales: hora, días, aviso tras 2/3/5/7/14 días sin registros y ocultar por hoy. Se muestran al abrir o mantener visible la app; no hay push ni solicitud de permiso ficticia. Exportación ICS RFC 5545 con 8 repeticiones por día del plan, alarma y UID estable; excluye descansos, perfil e historial. El usuario importa el calendario y revisa alertas; no se sincroniza y debe retirar eventos anteriores si cambia el plan. Para push cerrado en iPhone hace falta un servicio de envío/programación, suscripción explícita y PWA instalada.

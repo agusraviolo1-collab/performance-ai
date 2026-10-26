@@ -1,8 +1,8 @@
-import {validateProfile,localDate,clone} from './core.mjs?v=10';
+import {validateProfile,localDate,clone} from './core.mjs?v=12';
 export function mountProfile(getData,save,notify,available=()=>true){
  const $=id=>document.getElementById(id),dialog=$('profileDialog');
  function open(){if(!available()){notify('Restaurá un respaldo válido antes de configurar el perfil.',true);return;}const p=getData().profile;$('profileTitle').textContent=p?'Editar mi perfil':'Registrate para empezar';$('profileNameInput').value=p?.name||'';$('profileBirth').value=p?.birthDate||'';$('profileBirth').max=localDate();$('profileWeight').value=p?.weightKg??'';$('profileHeight').value=p?.heightCm??'';$('cancelProfile').classList.toggle('hide',!p);$('profileError').textContent='';if(!dialog.open)dialog.showModal();}
- $('editProfile').onclick=open;$('cancelProfile').onclick=()=>dialog.close();dialog.addEventListener('cancel',event=>{if(!getData().profile&&available())event.preventDefault();});
+ $('editProfile').onclick=open;$('headerEditProfile').onclick=open;$('cancelProfile').onclick=()=>dialog.close();dialog.addEventListener('cancel',event=>{if(!getData().profile&&available())event.preventDefault();});
  $('profileForm').addEventListener('submit',event=>{event.preventDefault();try{const profile=validateProfile({name:$('profileNameInput').value,birthDate:$('profileBirth').value,weightKg:Number($('profileWeight').value),heightCm:Number($('profileHeight').value)});const next=clone(getData());next.profile=profile;if(save(next)){dialog.close();notify('Perfil guardado en este navegador.');}else $('profileError').textContent='No se pudo guardar el perfil. Revisá el almacenamiento del navegador e intentá nuevamente.';}catch(error){$('profileError').textContent=error.message;}});
  function render(){const p=getData().profile;$('profileSummary').textContent=p?`${p.name} · ${p.weightKg} kg · ${p.heightCm} cm`:'Todavía no completaste tu perfil.';$('personalGreeting').textContent=p?'Hola, '+p.name+'.':'';if(!p&&available())queueMicrotask(()=>{if(!getData().profile&&available())open();});}
  return {render};
