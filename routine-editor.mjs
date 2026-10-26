@@ -1,6 +1,6 @@
-import {uid,clone,clean,planChange} from './core.mjs?v=19';
-import {readPrescription,exercisePair} from './exercise-data.mjs?v=19';
-import {enableDragLists} from './drag-lists.mjs?v=19';
+import {uid,clone,clean,planChange} from './core.mjs?v=20';
+import {readPrescription,exercisePair} from './exercise-data.mjs?v=20';
+import {enableDragLists} from './drag-lists.mjs?v=20';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const handle=label=>`<button type="button" class="drag-handle" data-drag-handle aria-label="${esc(label)}" title="Arrastrar para ordenar; teclado: flechas arriba y abajo">⠿</button>`;
 export function mountRoutineEditor(getData,save,notify){

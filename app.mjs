@@ -1,16 +1,16 @@
-import {migrateMobilityRoutine} from './mobility-routine.mjs?v=19';
-import {mountTodayRoutine} from './today-routine.mjs?v=19';
-import {mountSportViews} from './sport-view.mjs?v=19';
-import {planForDate,weekAt,monday,addDays,dayPlanLabel} from './sport-data.mjs?v=19';
-import {mountReminders} from './reminder-view.mjs?v=19';
-import {mountRoutineEditor} from './routine-editor.mjs?v=19';
-import {mountProfile} from './profile.mjs?v=19';
-import {mountRoutineExchange} from './routine-exchange.mjs?v=19';
-import {mountRpeGuide} from './rpe-guide.mjs?v=19';
-import {mountPlanShare} from './plan-share-view.mjs?v=19';
-import {mountReports} from './report-view.mjs?v=19';
-import {WEEK,SPORTS} from './base.mjs?v=19';
-import {KEY,clone,uid,clean,localDate,defaults,load,commit,planChange,undoPlan,removeRoutine,parseImport,applyImport,weekSessions,validate} from './core.mjs?v=19';
+import {migrateMobilityRoutine} from './mobility-routine.mjs?v=20';
+import {mountTodayRoutine} from './today-routine.mjs?v=20';
+import {mountSportViews} from './sport-view.mjs?v=20';
+import {planForDate,weekAt,monday,addDays,dayPlanLabel,activityStatus,statusLabel,progressFor} from './sport-data.mjs?v=20';
+import {mountReminders} from './reminder-view.mjs?v=20';
+import {mountRoutineEditor} from './routine-editor.mjs?v=20';
+import {mountProfile} from './profile.mjs?v=20';
+import {mountRoutineExchange} from './routine-exchange.mjs?v=20';
+import {mountRpeGuide} from './rpe-guide.mjs?v=20';
+import {mountPlanShare} from './plan-share-view.mjs?v=20';
+import {mountReports} from './report-view.mjs?v=20';
+import {WEEK,SPORTS} from './base.mjs?v=20';
+import {KEY,clone,uid,clean,localDate,defaults,load,commit,planChange,undoPlan,removeRoutine,parseImport,applyImport,weekSessions,validate} from './core.mjs?v=20';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let storage;try{storage=localStorage;}catch{storage={getItem(){throw Error('Almacenamiento no disponible');},setItem(){throw Error('Almacenamiento no disponible');}};}
 const initial=load(storage);let db=initial.data,blocked=!!initial.blocked,editActivity=null,editRoutine=null,importDraft=null,importGeneration=0,chat=[],token='',busy=false;
@@ -29,9 +29,17 @@ function notice(message,error=false){$('notice').textContent=message;$('notice')
 function save(next){if(blocked){notice('Conservamos tus datos originales. Exportalos y restaurá un respaldo válido antes de guardar cambios.',true);return false;}try{db=commit(storage,next);render();return true;}catch{notice('No se pudo guardar. El navegador puede estar sin espacio o bloquear el almacenamiento. Tus cambios anteriores siguen conservados. Exportá un respaldo.',true);return false;}}
 function go(id){if(!['inicio','plan','entrenar','progreso','coach','ajustes'].includes(id))return;document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===id);b.setAttribute('aria-current',b.dataset.tab===id?'page':'false');});document.querySelector('.tabs [data-tab="'+id+'"]').scrollIntoView({block:'nearest',inline:'nearest'});window.scrollTo(0,0);}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).close()));
-function advice(){const sessions=weekSessions(db),sum=sessions.reduce((n,s)=>n+s.duration*s.rpe,0);return sessions.length?`Registraste ${sessions.length} actividad(es) y ${sum} unidades de carga esta semana. Compará varias semanas antes de sacar conclusiones sobre tu recuperación.`:'Todavía no registraste actividades esta semana. Después de entrenar, indicá duración y esfuerzo para medir tu carga.';}
+function advice(){const sessions=weekSessions(db),sum=sessions.reduce((n,s)=>n+s.duration*s.rpe,0);return sessions.length?`Registraste ${sessions.length} actividad(es). La carga suma solo registros que incluyen duración: ${sum} unidades esta semana. Compará varias semanas antes de sacar conclusiones sobre tu recuperación.`:'Todavía no registraste actividades esta semana. Después de entrenar, indicá duración y esfuerzo para medir tu carga.';}
 function routineChoices(sport){const list=db.routines.filter(r=>r.sport===sport);return [['','Sin rutina / actividad libre'],...list.map(r=>[r.id,r.title])];}
 function sessionRoutineRender(){const old=$('activityRoutine').value,choices=routineChoices($('activitySport').value);$('activityRoutine').innerHTML=options(choices,choices.some(x=>x[0]===old)?old:'');$('routineHint').textContent=choices.length===1?'No hay rutinas para este deporte. Podés crear una en Mi plan.':'La rutina quedará identificada en tu historial aunque después la edites o elimines.';}
+
+let homeWeekStart=monday();
+function renderHomeWeek(){
+ const title=document.getElementById('homeWeekTitle');if(title)title.textContent=homeWeekStart===monday()?'Esta semana':'Semana del '+new Date(homeWeekStart+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'});
+ $('miniWeek').innerHTML=weekAt(db,homeWeekStart).map((items,i)=>{const date=addDays(homeWeekStart,i),progress=progressFor(db,date);return `<div class="day"><div class="daynum">${WEEK[i][0]}<span class="small" style="display:block">${date.slice(8)}/${date.slice(5,7)}</span></div><div class="daybody">${items.length?items.map(a=>{const status=activityStatus(db,a,date);return a.isRest?`<div class="daytitle">${esc(a.title)} · Descanso</div>`:`<button type="button" class="home-plan-activity" data-register-planned="${esc(a.id)}" data-planned-date="${date}" ${date>localDate()?'disabled':''}><strong>${esc(a.title)}</strong><span class="activity-status">${statusLabel(status)}</span><span class="small">${date>localDate()?'Fecha futura':status==='complete'?'Ver / editar registro':status==='partial'?'Completar registro':'Registrar actividad'} →</span></button>`;}).join(''):'Sin actividad'}${progress.allComplete?'<span class="activity-status">✓ Día completo</span>':''}</div>${date===localDate()?'<span class="tag">Hoy</span>':''}</div>`;}).join('');
+}
+$('homeWeekPrevious').onclick=()=>{homeWeekStart=addDays(homeWeekStart,-7);renderHomeWeek();};$('homeWeekNext').onclick=()=>{homeWeekStart=addDays(homeWeekStart,7);renderHomeWeek();};$('homeWeekToday').onclick=()=>{homeWeekStart=monday();renderHomeWeek();};
+
 function render(){
  profileView.render();
  reminderView.render();
@@ -40,14 +48,14 @@ function render(){
  reports.render();
  renderMarksAdvice();
  const day=(new Date().getDay()+6)%7,currentDay=planForDate(db,localDate()),sessions=weekSessions(db),sum=sessions.reduce((n,s)=>n+s.duration*s.rpe,0);
- $('todayDate').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});$('todayTitle').textContent=currentDay.length?currentDay.map(a=>a.title).join(' · '):'Sin actividad programada';$('todayDetail').textContent='Podés ajustar tu semana desde Mi plan.';$('weekLoad').textContent=sessions.length?sum:'—';$('weekSessions').textContent=sessions.length;$('routineCount').textContent=db.routines.length;$('advice').textContent=advice();
- $('miniWeek').innerHTML=weekAt(db,monday()).map((items,i)=>`<div class="day"><div class="daynum">${WEEK[i][0]}</div><div class="daybody">${items.length?items.map(a=>`<div class="daytitle">${esc(a.title)}</div>`).join(''):'Sin actividad'}</div>${day===i?'<span class="tag">Hoy</span>':''}</div>`).join('');
+ $('todayDate').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});$('todayTitle').textContent=currentDay.length?currentDay.map(a=>a.title).join(' · '):'Sin actividad programada';$('todayDetail').textContent=progressFor(db,localDate()).label;$('weekLoad').textContent=sessions.some(s=>s.duration!=null)?sum:'—';$('weekSessions').textContent=sessions.length;$('routineCount').textContent=db.routines.length;$('advice').textContent=advice();
+ renderHomeWeek();
  const openedDays=new Set([...$('weekList').querySelectorAll('details[open]')].map(d=>d.dataset.weekDay));
- $('weekList').innerHTML=db.week.map((items,i)=>`<details class="week-day ${db.planWeekStart===monday()&&day===i?'week-day-today':''}" data-week-day="${i}" ${openedDays.has(String(i))?'open':''}><summary><span class="week-day-label">${WEEK[i][0]}${db.planWeekStart===monday()&&day===i?'<span class="week-today-label">Hoy</span>':''}</span><span class="week-day-overview"><span class="week-day-title">${items.length?items.map(a=>esc(a.title)).join(' · '):'Sin actividad'}</span><span class="week-day-meta">${dayPlanLabel(db,addDays(db.planWeekStart,i))}</span></span><span class="week-day-chevron" aria-hidden="true">⌄</span></summary><div class="week-day-body">${items.length?items.map(a=>`<div class="activity-entry"><div class="daytitle">${esc(a.title)}</div><div class="small">${esc(a.sport)}${a.routineId?' · '+esc(db.routines.find(r=>r.id===a.routineId)?.title):''}</div><div class="small">${a.isRest?'Descanso / sin sesión':(a.plannedDuration!=null?a.plannedDuration+' min previstos':'Duración sin definir')+' · '+(a.plannedRpe!=null?'RPE '+a.plannedRpe+' previsto':'RPE sin definir')}</div><div class="toolbar"><button class="btn secondary smallbtn" data-edit-activity="${esc(a.id)}">Editar / mover</button><button class="btn outline smallbtn" data-delete-activity="${esc(a.id)}" aria-label="Eliminar ${esc(a.title)} del ${WEEK[i][0]}">Eliminar</button></div></div>`).join(''):''}<button class="btn outline smallbtn" data-add-day="${i}">Agregar al ${WEEK[i][0]}</button></div></details>`).join('');
+ $('weekList').innerHTML=db.week.map((items,i)=>`<details class="week-day ${db.planWeekStart===monday()&&day===i?'week-day-today':''}" data-week-day="${i}" ${openedDays.has(String(i))?'open':''}><summary><span class="week-day-label">${WEEK[i][0]}${db.planWeekStart===monday()&&day===i?'<span class="week-today-label">Hoy</span>':''}</span><span class="week-day-overview"><span class="week-day-title">${items.length?items.map(a=>esc(a.title)).join(' · '):'Sin actividad'}</span><span class="week-day-meta">${dayPlanLabel(db,addDays(db.planWeekStart,i))}</span></span><span class="week-day-chevron" aria-hidden="true">⌄</span></summary><div class="week-day-body">${items.length?items.map(a=>`<div class="activity-entry"><div class="daytitle">${esc(a.title)} <span class="activity-status">${statusLabel(activityStatus(db,a,addDays(db.planWeekStart,i)))}</span></div><div class="small">${esc(a.sport)}${a.routineId?' · '+esc(db.routines.find(r=>r.id===a.routineId)?.title):''}</div><div class="small">${a.isRest?'Descanso / sin sesión':(a.plannedDuration!=null?a.plannedDuration+' min previstos':'Duración sin definir')+' · '+(a.plannedRpe!=null?'RPE '+a.plannedRpe+' previsto':'RPE sin definir')}</div><div class="toolbar"><button class="btn secondary smallbtn" data-edit-activity="${esc(a.id)}">Editar / mover</button><button class="btn outline smallbtn" data-delete-activity="${esc(a.id)}" aria-label="Eliminar ${esc(a.title)} del ${WEEK[i][0]}">Eliminar</button></div></div>`).join(''):''}<button class="btn outline smallbtn" data-add-day="${i}">Agregar al ${WEEK[i][0]}</button></div></details>`).join('');
  $('undoPlan').disabled=!db.planBackup;
  routineEditor.render();
  const prev=$('activitySport').value;$('activitySport').innerHTML=options(db.sports.map(s=>[s,s]),db.sports.includes(prev)?prev:db.sports[0]);sessionRoutineRender();
- $('sessionList').innerHTML=db.sessions.length?db.sessions.slice().reverse().slice(0,30).map(s=>`<div class="item"><b>${esc(s.sport)}${s.routineTitle?' · '+esc(s.routineTitle):''}</b><div>${s.duration} min · RPE ${s.rpe} · ${esc(s.date)}</div><div class="small">Carga ${s.duration*s.rpe} u.${s.note?' · '+esc(s.note):''}</div></div>`).join(''):'Todavía no hay sesiones registradas.';
+ $('sessionList').innerHTML=db.sessions.length?db.sessions.slice().reverse().slice(0,30).map(s=>`<div class="item"><b>${esc(s.sport)}${s.routineTitle?' · '+esc(s.routineTitle):''}</b><div>${s.duration} min · RPE ${s.rpe} · ${esc(s.date)}</div><div class="small">${s.duration==null?'Carga sin calcular':'Carga '+s.duration*s.rpe+' u.'}${s.note?' · '+esc(s.note):''}</div></div>`).join(''):'Todavía no hay sesiones registradas.';
  const byday=Array(7).fill(0);for(const s of sessions)byday[(new Date(s.date+'T12:00:00').getDay()+6)%7]+=s.duration*s.rpe;const max=Math.max(1,...byday);$('loadChart').innerHTML=byday.map((value,i)=>`<div class="row" style="margin:10px 0"><span style="width:32px">${WEEK[i][0]}</span><div class="bar" style="flex:1"><div class="fill" style="width:${100*value/max}%"></div></div><span class="small">${value||'—'}</span></div>`).join('');
  $('exerciseNames').innerHTML=[...new Set(db.routines.flatMap(r=>r.ex.map(e=>e[0])))].map(n=>`<option value="${esc(n)}"></option>`).join('');$('marksList').innerHTML=db.marks.slice().reverse().slice(0,30).map(m=>`<div class="item"><b>${esc(m.exercise)}</b> · ${m.weight} kg × ${m.reps} reps <span class="small">${esc(m.date)}</span></div>`).join('')||'<p class="empty">Sin marcas registradas.</p>';
 

@@ -1,5 +1,5 @@
-import {normalizeReminders,reminderMessages,reminderCalendar} from './reminders.mjs?v=19';
-import {clone,localDate} from './core.mjs?v=19';
+import {normalizeReminders,reminderMessages,reminderCalendar} from './reminders.mjs?v=20';
+import {clone,localDate} from './core.mjs?v=20';
 export function mountReminders(getData,save,available=()=>true){
  const $=id=>document.getElementById(id),dialog=$('reminderDialog');let linkUrl=null;
  const dayInputs=[...document.querySelectorAll('[name="reminderDay"]')];
