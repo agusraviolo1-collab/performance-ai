@@ -1,5 +1,5 @@
-import {encodeRoutine,decodeRoutine} from './routine-codec.mjs?v=17';
-import {normalizeRoutines,localDate} from './core.mjs?v=14';
+import {encodeRoutine,decodeRoutine} from './routine-codec.mjs?v=19';
+import {normalizeRoutines,localDate} from './core.mjs?v=19';
 export const MAX_LINK_LENGTH=8000;
 export function routinePackage(routine,today=localDate()){
  const [r]=normalizeRoutines([routine]);return {format:'performance-ai-routine',version:1,exported:today,routines:[{title:r.title,sport:r.sport,warm:r.warm,ex:r.ex.map(e=>[...e])}]};
@@ -30,6 +30,6 @@ export function mountRoutineExchange(getData,onIncoming,notify,onAcceptIncoming)
  $('acceptReceivedRoutine').onclick=()=>{if(!received||receiving)return;receiving=true;$('acceptReceivedRoutine').disabled=true;try{if(onAcceptIncoming){if(onAcceptIncoming(received)){clearIncomingHash();received=null;$('receivedRoutineDialog').close();}else $('receivedRoutineStatus').textContent='No se pudo guardar. Tus rutinas anteriores se conservan; revisá el aviso de almacenamiento.';}else{onIncoming(received,'Rutina recibida: '+received[0].title);received=null;$('receivedRoutineDialog').close();}}catch(error){$('receivedRoutineStatus').textContent=error.message;}finally{receiving=false;$('acceptReceivedRoutine').disabled=false;}};
  $('cleanAppLink').value=cleanAppUrl(location.href);$('copyCleanApp').onclick=()=>copy($('cleanAppLink').value,'cleanAppStatus','cleanAppLink');$('shareCleanApp').onclick=()=>share($('cleanAppLink').value,'Performance AI · Creá tu propio plan','cleanAppStatus');
  function handleLink(){try{const routines=readRoutineLink(location.href);if(routines){stageIncoming(routines);}else if(new URL(location.href).searchParams.get('inicio')==='limpio')notify('Este enlace inicia en blanco para nuevos usuarios. Si ya usabas la app, se conservan tus datos guardados.');}catch(error){notify(error.message,true);}}
- function render(){const db=getData();$('openRoutineShare').disabled=!db.routines.length;$('blankStartHint').classList.toggle('hide',db.routines.length>0||db.sessions.length>0||db.week.some(day=>day.length));$('legacyPlanExtras').classList.toggle('hide',!db.routines.some(r=>['fuerza','empuje','traccion'].includes(r.id)));}
+ function render(){const db=getData();$('openRoutineShare').disabled=!db.routines.length;$('blankStartHint').classList.toggle('hide',db.routines.length>0||db.sessions.length>0||db.week.some(day=>day.length));}
  return {handleLink,render};
 }

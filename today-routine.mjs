@@ -1,5 +1,5 @@
-import {planForDate} from './sport-data.mjs?v=14';
-import {localDate} from './core.mjs?v=14';
+import {planForDate} from './sport-data.mjs?v=19';
+import {localDate} from './core.mjs?v=19';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function todayRoutineMarkup(db,date=localDate()){
  const activities=planForDate(db,date);

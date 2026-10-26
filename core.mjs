@@ -1,14 +1,14 @@
-import {FOCUS,monday,isDate,sessionDetails,normalizeGoals,normalizeWellness} from './sport-data.mjs?v=14';
-import {reminderDefaults,normalizeReminders} from './reminders.mjs?v=14';
-import {exercisePair} from './exercise-data.mjs?v=14';
-import { BASE, WEEK, SPORTS } from './base.mjs?v=14';
+import {FOCUS,monday,isDate,sessionDetails,normalizeGoals,normalizeWellness} from './sport-data.mjs?v=19';
+import {reminderDefaults,normalizeReminders} from './reminders.mjs?v=19';
+import {exercisePair} from './exercise-data.mjs?v=19';
+import { BASE, WEEK, SPORTS } from './base.mjs?v=19';
 export const KEY='pa_v6';
 export const clone=x=>JSON.parse(JSON.stringify(x));
 export const uid=()=>globalThis.crypto.randomUUID();
 export const clean=(x,max=160)=>String(x??'').trim().slice(0,max);
 export const localDate=(d=new Date())=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 export function validDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+'T12:00:00');return Number.isFinite(+d)&&localDate(d)===s;}
-export function defaults(){return {version:6,focus:'general',goals:{},wellness:[],planWeekStart:monday(),planWeeks:{},reminders:reminderDefaults(),profile:null,sessions:[],marks:[],sports:SPORTS.slice(0,5),routines:BASE.map(r=>({...clone(r),sport:'Gimnasio'})),week:WEEK.map((w,i)=>[{id:'base-'+i,title:w[1],sport:[0,1,4].includes(i)?'Gimnasio':[2,5].includes(i)?'Fútbol':'Movilidad / yoga',routineId:BASE.some(r=>r.id===w[2])?w[2]:null,plannedDuration:null,plannedRpe:null,isRest:i===6}]),planBackup:null};}
+export function defaults(){return {version:6,mobilityRoutineMigrated:false,focus:'general',goals:{},wellness:[],planWeekStart:monday(),planWeeks:{},reminders:reminderDefaults(),profile:null,sessions:[],marks:[],sports:SPORTS.slice(0,5),routines:BASE.map(r=>({...clone(r),sport:'Gimnasio'})),week:WEEK.map((w,i)=>[{id:'base-'+i,title:w[1],sport:[0,1,4].includes(i)?'Gimnasio':[2,5].includes(i)?'Fútbol':'Movilidad / yoga',routineId:BASE.some(r=>r.id===w[2])?w[2]:null,plannedDuration:null,plannedRpe:null,isRest:i===6}]),planBackup:null};}
 function requireThat(ok,msg){if(!ok)throw Error(msg);}
 export function blankDefaults(){return {...defaults(),routines:[],week:Array.from({length:7},()=>[]),planBackup:null};}
 export function validateProfile(input,today=localDate()){
@@ -35,6 +35,7 @@ export function normalizeRoutines(rows){
 export function validate(raw){
  requireThat(raw&&typeof raw==='object'&&!Array.isArray(raw),'Respaldo inválido.');
  const d=defaults();
+ d.mobilityRoutineMigrated=raw.mobilityRoutineMigrated===true;
  d.reminders=normalizeReminders(raw.reminders);
  d.focus=Object.hasOwn(FOCUS,raw.focus)?raw.focus:'general';d.goals=normalizeGoals(raw.goals);d.wellness=normalizeWellness(raw.wellness);
  d.profile=raw.profile==null?null:validateProfile(raw.profile);

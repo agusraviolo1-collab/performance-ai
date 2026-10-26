@@ -1,4 +1,4 @@
-import {validateProfile,localDate,clone} from './core.mjs?v=14';
+import {validateProfile,localDate,clone} from './core.mjs?v=19';
 export function mountProfile(getData,save,notify,available=()=>true){
  const $=id=>document.getElementById(id),dialog=$('profileDialog');
  function open(){if(!available()){notify('Restaurá un respaldo válido antes de configurar el perfil.',true);return;}const p=getData().profile;$('profileTitle').textContent=p?'Editar mi perfil':'Registrate para empezar';$('profileNameInput').value=p?.name||'';$('profileBirth').value=p?.birthDate||'';$('profileBirth').max=localDate();$('profileWeight').value=p?.weightKg??'';$('profileHeight').value=p?.heightCm??'';$('cancelProfile').classList.toggle('hide',!p);$('profileError').textContent='';if(!dialog.open)dialog.showModal();}

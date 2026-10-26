@@ -1,5 +1,5 @@
-import {clone,uid,localDate,planChange,validate} from './core.mjs?v=14';
-import {FOCUS,DISCIPLINES,monday,addDays,weekAt,planForDate,sessionDetails,sportSummary,completionFor,isDate} from './sport-data.mjs?v=14';
+import {clone,uid,localDate,planChange,validate} from './core.mjs?v=19';
+import {FOCUS,DISCIPLINES,monday,addDays,weekAt,planForDate,sessionDetails,sportSummary,completionFor,isDate} from './sport-data.mjs?v=19';
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>new Intl.NumberFormat('es-AR',{maximumFractionDigits:1}).format(n),clock=n=>n<60?fmt(n)+' min':Math.floor(n/60)+' h'+(n%60?' '+fmt(n%60):'');
 const optional=input=>input.value.trim()===''?null:Number(input.value);
