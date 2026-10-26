@@ -3,7 +3,7 @@ import {planForDate,weekAt,monday,addDays,dayPlanLabel} from './sport-data.mjs?v
 import {mountReminders} from './reminder-view.mjs?v=14';
 import {mountRoutineEditor} from './routine-editor.mjs?v=14';
 import {mountProfile} from './profile.mjs?v=14';
-import {mountRoutineExchange} from './routine-exchange.mjs?v=14';
+import {mountRoutineExchange} from './routine-exchange.mjs?v=16';
 import {mountRpeGuide} from './rpe-guide.mjs?v=14';
 import {mountPlanShare} from './plan-share-view.mjs?v=14';
 import {mountReports} from './report-view.mjs?v=14';
@@ -18,7 +18,7 @@ const reminderView=mountReminders(()=>db,save,()=>!blocked);
 const profileView=mountProfile(()=>db,save,notice,()=>!blocked);
 const rpeGuide=mountRpeGuide();
 const sportView=mountSportViews(()=>db,save,go,notice,()=>!blocked,()=>rpeGuide.refresh());
-const routineExchange=mountRoutineExchange(()=>db,(routines,name)=>{importDraft=routines;renderImport(name);go('ajustes');$('importPreview').scrollIntoView({block:'start'});},notice);
+const routineExchange=mountRoutineExchange(()=>db,(routines,name)=>{importDraft=routines;renderImport(name);go('ajustes');$('importPreview').scrollIntoView({block:'start'});},notice,routines=>{try{if(save(applyImport(db,routines,'add'))){go('plan');notice('Rutina recibida agregada. Podés deshacer la importación desde Opciones de la semana.');return true;}}catch(error){notice(error.message,true);}return false;});
 const planSharing=mountPlanShare(()=>db,()=>!blocked);
 const options=(values,selected)=>values.map(([v,label])=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(label)}</option>`).join('');
 function notice(message,error=false){$('notice').textContent=message;$('notice').classList.toggle('hide',!message);$('notice').classList.toggle('notice-error',error);}
