@@ -1,6 +1,6 @@
 import {migrateMobilityRoutine} from './mobility-routine.mjs?v=20';
 import {mountTodayRoutine} from './today-routine.mjs?v=20';
-import {mountSportViews} from './sport-view.mjs?v=22';
+import {mountSportViews} from './sport-view.mjs?v=23';
 import {planForDate,weekAt,monday,addDays,dayPlanLabel,activityStatus,statusLabel,progressFor} from './sport-data.mjs?v=20';
 import {mountReminders} from './reminder-view.mjs?v=20';
 import {mountRoutineEditor} from './routine-editor.mjs?v=20';
