@@ -1,4 +1,5 @@
-import {mountSportViews} from './sport-view.mjs?v=15';
+import {mountTodayRoutine} from './today-routine.mjs?v=18';
+import {mountSportViews} from './sport-view.mjs?v=18';
 import {planForDate,weekAt,monday,addDays,dayPlanLabel} from './sport-data.mjs?v=14';
 import {mountReminders} from './reminder-view.mjs?v=14';
 import {mountRoutineEditor} from './routine-editor.mjs?v=14';
@@ -12,6 +13,7 @@ import {KEY,clone,uid,clean,localDate,defaults,load,commit,planChange,undoPlan,r
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let storage;try{storage=localStorage;}catch{storage={getItem(){throw Error('Almacenamiento no disponible');},setItem(){throw Error('Almacenamiento no disponible');}};}
 const initial=load(storage);let db=initial.data,blocked=!!initial.blocked,editActivity=null,editRoutine=null,importDraft=null,importGeneration=0,chat=[],token='',busy=false;
+mountTodayRoutine(()=>db,go);
 const reports=mountReports(()=>db);
 const routineEditor=mountRoutineEditor(()=>db,save,notice);
 const reminderView=mountReminders(()=>db,save,()=>!blocked);
