@@ -1,5 +1,6 @@
-import {coachPdf,downloadPdf} from './pdf-export.mjs?v=10';
-import {nextMonday,buildPlanPackage,planText,planFragment,planHtml,planCsv,planTotals} from './plan-share.mjs?v=10';
+import {weekAt} from './sport-data.mjs?v=14';
+import {coachPdf,downloadPdf} from './pdf-export.mjs?v=14';
+import {nextMonday,buildPlanPackage,planText,planFragment,planHtml,planCsv,planTotals} from './plan-share.mjs?v=14';
 const $=id=>document.getElementById(id);
 export function mountPlanShare(getData,available=()=>true){
  let packet=null,sharing=false;
@@ -7,10 +8,10 @@ export function mountPlanShare(getData,available=()=>true){
  const actionIds=['nativeSharePlan','copyPlan','downloadPlanTxt','downloadPlanHtml','downloadPlanCsv','printPlan'];
  function preview(){
  $('coachPdfLink').classList.add('hide');
-  try{if(!available())throw Error('Los datos actuales no se pueden leer. Restaurá un respaldo válido antes de compartir.');packet=buildPlanPackage(getData(),{weekStart:$('shareWeek').value,includeRoutines:$('shareRoutines').checked,includeRecent:$('shareRecent').checked,note:$('shareNote').value});$('sharePlanPreview').innerHTML=planFragment(packet);$('sharePlanPreview').classList.remove('hide');$('sharePlanStatus').textContent='Vista previa actualizada. Todavía no se compartió ningún dato.';actionIds.forEach(id=>$(id).disabled=false);$('manualPlanCopy').classList.add('hide');}
+  try{if(!available())throw Error('Los datos actuales no se pueden leer. Restaurá un respaldo válido antes de compartir.');packet=buildPlanPackage({...getData(),week:weekAt(getData(),$('shareWeek').value)},{weekStart:$('shareWeek').value,includeRoutines:$('shareRoutines').checked,includeRecent:$('shareRecent').checked,note:$('shareNote').value});$('sharePlanPreview').innerHTML=planFragment(packet);$('sharePlanPreview').classList.remove('hide');$('sharePlanStatus').textContent='Vista previa actualizada. Todavía no se compartió ningún dato.';actionIds.forEach(id=>$(id).disabled=false);$('manualPlanCopy').classList.add('hide');}
   catch(err){packet=null;$('sharePlanPreview').classList.add('hide');$('manualPlanCopy').classList.add('hide');$('sharePlanStatus').textContent=err.message;actionIds.forEach(id=>$(id).disabled=true);}
  }
- $('openPlanShare').onclick=()=>{$('shareRecent').checked=false;preview();$('sharePlanDialog').showModal();};
+ $('openPlanShare').onclick=()=>{$('shareWeek').value=getData().planWeekStart;$('shareRecent').checked=false;preview();$('sharePlanDialog').showModal();};
  for(const id of ['shareWeek','shareRoutines','shareRecent'])$(id).addEventListener('change',preview);$('shareNote').addEventListener('input',preview);
  function download(content,extension,type){if(!packet)return;const url=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=url;a.download='performance-ai-plan-'+packet.weekStart+'.'+extension;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('sharePlanStatus').textContent='Archivo preparado. Revisá las descargas de tu dispositivo para enviarlo.';}
  $('downloadPlanTxt').onclick=()=>packet&&download(planText(packet),'txt','text/plain;charset=utf-8');$('downloadPlanHtml').onclick=()=>packet&&download(planHtml(packet),'html','text/html;charset=utf-8');$('downloadPlanCsv').onclick=()=>packet&&download(planCsv(packet),'csv','text/csv;charset=utf-8');

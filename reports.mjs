@@ -1,4 +1,4 @@
-import {localDate,validDate} from './core.mjs';
+import {localDate,validDate} from './core.mjs?v=14';
 export const monthKey=(date=localDate())=>date.slice(0,7);
 export function shiftMonth(key,offset){const [y,m]=key.split('-').map(Number);const d=new Date(Date.UTC(y,m-1+offset,1));return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;}
 export function monthDays(key){const [y,m]=key.split('-').map(Number);return new Date(Date.UTC(y,m,0)).getUTCDate();}

@@ -1,13 +1,14 @@
-import {reminderDefaults,normalizeReminders} from './reminders.mjs?v=12';
-import {exercisePair} from './exercise-data.mjs?v=11';
-import { BASE, WEEK, SPORTS } from './base.mjs';
+import {FOCUS,monday,isDate,sessionDetails,normalizeGoals,normalizeWellness} from './sport-data.mjs?v=14';
+import {reminderDefaults,normalizeReminders} from './reminders.mjs?v=14';
+import {exercisePair} from './exercise-data.mjs?v=14';
+import { BASE, WEEK, SPORTS } from './base.mjs?v=14';
 export const KEY='pa_v6';
 export const clone=x=>JSON.parse(JSON.stringify(x));
 export const uid=()=>globalThis.crypto.randomUUID();
 export const clean=(x,max=160)=>String(x??'').trim().slice(0,max);
 export const localDate=(d=new Date())=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 export function validDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+'T12:00:00');return Number.isFinite(+d)&&localDate(d)===s;}
-export function defaults(){return {version:6,reminders:reminderDefaults(),profile:null,sessions:[],marks:[],sports:SPORTS.slice(0,5),routines:BASE.map(r=>({...clone(r),sport:'Gimnasio'})),week:WEEK.map((w,i)=>[{id:'base-'+i,title:w[1],sport:[0,1,4].includes(i)?'Gimnasio':[2,5].includes(i)?'Fútbol':'Movilidad / yoga',routineId:BASE.some(r=>r.id===w[2])?w[2]:null,plannedDuration:null,plannedRpe:null,isRest:i===6}]),planBackup:null};}
+export function defaults(){return {version:6,focus:'general',goals:{},wellness:[],planWeekStart:monday(),planWeeks:{},reminders:reminderDefaults(),profile:null,sessions:[],marks:[],sports:SPORTS.slice(0,5),routines:BASE.map(r=>({...clone(r),sport:'Gimnasio'})),week:WEEK.map((w,i)=>[{id:'base-'+i,title:w[1],sport:[0,1,4].includes(i)?'Gimnasio':[2,5].includes(i)?'Fútbol':'Movilidad / yoga',routineId:BASE.some(r=>r.id===w[2])?w[2]:null,plannedDuration:null,plannedRpe:null,isRest:i===6}]),planBackup:null};}
 function requireThat(ok,msg){if(!ok)throw Error(msg);}
 export function blankDefaults(){return {...defaults(),routines:[],week:Array.from({length:7},()=>[]),planBackup:null};}
 export function validateProfile(input,today=localDate()){
@@ -35,13 +36,18 @@ export function validate(raw){
  requireThat(raw&&typeof raw==='object'&&!Array.isArray(raw),'Respaldo inválido.');
  const d=defaults();
  d.reminders=normalizeReminders(raw.reminders);
+ d.focus=Object.hasOwn(FOCUS,raw.focus)?raw.focus:'general';d.goals=normalizeGoals(raw.goals);d.wellness=normalizeWellness(raw.wellness);
  d.profile=raw.profile==null?null:validateProfile(raw.profile);
  for(const key of ['sessions','marks','sports'])requireThat(Array.isArray(raw[key]),'Falta la lista '+key+'.');
  d.sports=[...new Set(raw.sports.map(s=>clean(s,60)).filter(Boolean))];requireThat(d.sports.length>0&&d.sports.length<=100,'Seleccioná entre 1 y 100 deportes.');
- d.sessions=raw.sessions.map(s=>{requireThat(s&&clean(s.sport)&&Number.isFinite(s.duration)&&s.duration>0&&s.duration<=600&&Number.isFinite(s.rpe)&&s.rpe>=1&&s.rpe<=10&&validDate(s.date),'Hay actividades con datos inválidos.');return {id:clean(s.id,80)||uid(),sport:clean(s.sport,60),duration:s.duration,rpe:s.rpe,date:s.date,note:clean(s.note,500),routineId:clean(s.routineId,80)||null,routineTitle:clean(s.routineTitle)};});
+ d.sessions=raw.sessions.map(s=>{requireThat(s&&clean(s.sport)&&Number.isFinite(s.duration)&&s.duration>0&&s.duration<=600&&Number.isFinite(s.rpe)&&s.rpe>=1&&s.rpe<=10&&validDate(s.date),'Hay actividades con datos inválidos.');return {id:clean(s.id,80)||uid(),sport:clean(s.sport,60),duration:s.duration,rpe:s.rpe,date:s.date,note:clean(s.note,500),routineId:clean(s.routineId,80)||null,routineTitle:clean(s.routineTitle),...(s.focus&&Object.hasOwn(FOCUS,s.focus)?{focus:s.focus}:{}),...(s.details!=null?{details:sessionDetails(s.details,s.sport,s.duration)}:{}),...(s.planActivityId?{planActivityId:clean(s.planActivityId,80),planStatus:s.planStatus==='partial'?'partial':'complete'}:{})};});
  d.marks=raw.marks.map(m=>{requireThat(m&&clean(m.exercise)&&Number.isFinite(m.weight)&&m.weight>=0&&m.weight<=1500&&Number.isInteger(m.reps)&&m.reps>=1&&m.reps<=1000&&validDate(m.date),'Hay marcas con datos inválidos.');return {exercise:clean(m.exercise),weight:m.weight,reps:m.reps,date:m.date};});
  if(raw.routines!==undefined){d.routines=raw.routines.length?normalizeRoutines(raw.routines):[];requireThat(new Set(d.routines.map(r=>r.id)).size===d.routines.length,'Hay identificadores de rutina repetidos.');}
- if(raw.week!==undefined){requireThat(Array.isArray(raw.week)&&raw.week.length===7,'El plan debe tener siete días.');const ids=new Set();d.week=raw.week.map(day=>{requireThat(Array.isArray(day)&&day.length<=30,'Día del plan inválido.');return day.map(a=>{requireThat(a&&clean(a.title)&&!ids.has(a.id),'Actividad del plan inválida o repetida.');const id=clean(a.id,80)||uid();ids.add(id);return {id,title:clean(a.title),sport:clean(a.sport,60)||'Otros',routineId:d.routines.some(r=>r.id===a.routineId)?a.routineId:null,...plannedFields(a)};});});}
+ function normalizeWeek(input){requireThat(Array.isArray(input)&&input.length===7,'El plan debe tener siete días.');const ids=new Set();return input.map(day=>{requireThat(Array.isArray(day)&&day.length<=30,'Día del plan inválido.');return day.map(a=>{requireThat(a&&clean(a.title),'Actividad del plan inválida.');const id=clean(a.id,80)||uid();requireThat(!ids.has(id),'Actividad del plan repetida.');ids.add(id);return {id,title:clean(a.title),sport:clean(a.sport,60)||'Otros',routineId:d.routines.some(r=>r.id===a.routineId)?a.routineId:null,...plannedFields(a)};});});}
+ if(raw.week!==undefined)d.week=normalizeWeek(raw.week);
+ d.planWeekStart=isDate(raw.planWeekStart)&&monday(raw.planWeekStart)===raw.planWeekStart?raw.planWeekStart:monday();
+ if(raw.planWeeks!==undefined){requireThat(raw.planWeeks&&typeof raw.planWeeks==='object'&&!Array.isArray(raw.planWeeks)&&Object.keys(raw.planWeeks).length<=156,'Calendario inválido o mayor a 156 semanas.');for(const [date,week] of Object.entries(raw.planWeeks)){requireThat(isDate(date)&&monday(date)===date,'Cada semana del calendario debe empezar el lunes.');d.planWeeks[date]=normalizeWeek(week);}}
+ delete d.planWeeks[d.planWeekStart];
  for(const r of d.routines)if(!d.sports.includes(r.sport))d.sports.push(r.sport);
  d.planBackup=raw.planBackup&&Array.isArray(raw.planBackup.routines)&&Array.isArray(raw.planBackup.week)?clone(raw.planBackup):null;
  return d;
@@ -52,7 +58,7 @@ export function load(storage){
  try{const legacy=storage.getItem('pa_pilot_v4');if(!legacy)return {data:blankDefaults(),warning:'',fresh:true};const parsed=JSON.parse(legacy);const data=validate(parsed);storage.setItem(KEY,JSON.stringify(data));return {data,warning:'Tus registros anteriores se conservaron en la nueva versión.'};}catch{return {data:blankDefaults(),blocked:true,warning:'No pudimos migrar los registros anteriores. Conservamos el original; exportalo antes de restaurar.'};}
 }
 export function commit(storage,next){const data=validate(next);storage.setItem(KEY,JSON.stringify(data));return data;}
-export function snapshotPlan(d){return {routines:clone(d.routines),week:clone(d.week),sports:clone(d.sports)};}
+export function snapshotPlan(d){return {routines:clone(d.routines),week:clone(d.week),sports:clone(d.sports),planWeekStart:d.planWeekStart||monday(),planWeeks:clone(d.planWeeks||{})};}
 export function planChange(d,mutate){const next=clone(d);next.planBackup=snapshotPlan(d);mutate(next);return validate(next);}
 export function undoPlan(d){requireThat(d.planBackup,'No hay cambios para deshacer.');return validate({...d,...clone(d.planBackup),planBackup:null});}
 export function removeRoutine(d,id){return planChange(d,next=>{next.routines=next.routines.filter(r=>r.id!==id);next.week=next.week.map(day=>day.map(a=>a.routineId===id?{...a,routineId:null}:a));});}

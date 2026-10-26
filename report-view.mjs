@@ -1,5 +1,5 @@
-import {monthlyPdf,downloadPdf} from './pdf-export.mjs?v=10';
-import {monthKey,shiftMonth,monthlyReport,reportCsv} from './reports.mjs';
+import {monthlyPdf,downloadPdf} from './pdf-export.mjs?v=14';
+import {monthKey,shiftMonth,monthlyReport,reportCsv} from './reports.mjs?v=14';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>new Intl.NumberFormat('es-AR',{maximumFractionDigits:1}).format(n);
 const title=key=>new Date(key+'-15T12:00:00').toLocaleDateString('es-AR',{month:'long',year:'numeric'});
