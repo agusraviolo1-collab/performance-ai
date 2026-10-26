@@ -5,8 +5,10 @@ export const uid=()=>globalThis.crypto.randomUUID();
 export const clean=(x,max=160)=>String(x??'').trim().slice(0,max);
 export const localDate=(d=new Date())=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 export function validDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+'T12:00:00');return Number.isFinite(+d)&&localDate(d)===s;}
-export function defaults(){return {version:6,sessions:[],marks:[],sports:SPORTS.slice(0,5),routines:BASE.map(r=>({...clone(r),sport:'Gimnasio'})),week:WEEK.map((w,i)=>[{id:'base-'+i,title:w[1],sport:[0,1,4].includes(i)?'Gimnasio':[2,5].includes(i)?'Fútbol':'Movilidad / yoga',routineId:BASE.some(r=>r.id===w[2])?w[2]:null}]),planBackup:null};}
+export function defaults(){return {version:6,sessions:[],marks:[],sports:SPORTS.slice(0,5),routines:BASE.map(r=>({...clone(r),sport:'Gimnasio'})),week:WEEK.map((w,i)=>[{id:'base-'+i,title:w[1],sport:[0,1,4].includes(i)?'Gimnasio':[2,5].includes(i)?'Fútbol':'Movilidad / yoga',routineId:BASE.some(r=>r.id===w[2])?w[2]:null,plannedDuration:null,plannedRpe:null,isRest:i===6}]),planBackup:null};}
 function requireThat(ok,msg){if(!ok)throw Error(msg);}
+export function blankDefaults(){return {...defaults(),routines:[],week:Array.from({length:7},()=>[]),planBackup:null};}
+export function plannedFields(a){const duration=a.plannedDuration??null,rpe=a.plannedRpe??null;requireThat(duration===null||(Number.isInteger(duration)&&duration>=1&&duration<=600),'La duración prevista debe ser de 1 a 600 minutos.');requireThat(rpe===null||(Number.isFinite(rpe)&&rpe>=1&&rpe<=10),'El esfuerzo previsto debe estar entre 1 y 10.');const isRest=a.isRest===true;return {plannedDuration:isRest?null:duration,plannedRpe:isRest?null:rpe,isRest};}
 export function normalizeRoutines(rows){
  requireThat(Array.isArray(rows)&&rows.length<=100,'Se esperan hasta 100 rutinas.');
  return rows.map((r,i)=>{
@@ -26,15 +28,15 @@ export function validate(raw){
  d.sessions=raw.sessions.map(s=>{requireThat(s&&clean(s.sport)&&Number.isFinite(s.duration)&&s.duration>0&&s.duration<=600&&Number.isFinite(s.rpe)&&s.rpe>=1&&s.rpe<=10&&validDate(s.date),'Hay actividades con datos inválidos.');return {id:clean(s.id,80)||uid(),sport:clean(s.sport,60),duration:s.duration,rpe:s.rpe,date:s.date,note:clean(s.note,500),routineId:clean(s.routineId,80)||null,routineTitle:clean(s.routineTitle)};});
  d.marks=raw.marks.map(m=>{requireThat(m&&clean(m.exercise)&&Number.isFinite(m.weight)&&m.weight>=0&&m.weight<=1500&&Number.isInteger(m.reps)&&m.reps>=1&&m.reps<=1000&&validDate(m.date),'Hay marcas con datos inválidos.');return {exercise:clean(m.exercise),weight:m.weight,reps:m.reps,date:m.date};});
  if(raw.routines!==undefined){d.routines=raw.routines.length?normalizeRoutines(raw.routines):[];requireThat(new Set(d.routines.map(r=>r.id)).size===d.routines.length,'Hay identificadores de rutina repetidos.');}
- if(raw.week!==undefined){requireThat(Array.isArray(raw.week)&&raw.week.length===7,'El plan debe tener siete días.');const ids=new Set();d.week=raw.week.map(day=>{requireThat(Array.isArray(day)&&day.length<=30,'Día del plan inválido.');return day.map(a=>{requireThat(a&&clean(a.title)&&!ids.has(a.id),'Actividad del plan inválida o repetida.');const id=clean(a.id,80)||uid();ids.add(id);return {id,title:clean(a.title),sport:clean(a.sport,60)||'Otros',routineId:d.routines.some(r=>r.id===a.routineId)?a.routineId:null};});});}
+ if(raw.week!==undefined){requireThat(Array.isArray(raw.week)&&raw.week.length===7,'El plan debe tener siete días.');const ids=new Set();d.week=raw.week.map(day=>{requireThat(Array.isArray(day)&&day.length<=30,'Día del plan inválido.');return day.map(a=>{requireThat(a&&clean(a.title)&&!ids.has(a.id),'Actividad del plan inválida o repetida.');const id=clean(a.id,80)||uid();ids.add(id);return {id,title:clean(a.title),sport:clean(a.sport,60)||'Otros',routineId:d.routines.some(r=>r.id===a.routineId)?a.routineId:null,...plannedFields(a)};});});}
  for(const r of d.routines)if(!d.sports.includes(r.sport))d.sports.push(r.sport);
  d.planBackup=raw.planBackup&&Array.isArray(raw.planBackup.routines)&&Array.isArray(raw.planBackup.week)?clone(raw.planBackup):null;
  return d;
 }
 export function load(storage){
- let raw;try{raw=storage.getItem(KEY);}catch{return {data:defaults(),warning:'No pudimos leer el almacenamiento del navegador. Exportá tus datos.'};}
- if(raw){try{return {data:validate(JSON.parse(raw)),warning:''};}catch{return {data:defaults(),blocked:true,warning:'Los datos guardados no se pueden leer. Conservamos el original. Exportá los datos dañados antes de restaurar un respaldo.'};}}
- try{const legacy=storage.getItem('pa_pilot_v4');if(!legacy)return {data:defaults(),warning:''};const parsed=JSON.parse(legacy);const data=validate(parsed);storage.setItem(KEY,JSON.stringify(data));return {data,warning:'Tus registros anteriores se conservaron en la nueva versión.'};}catch{return {data:defaults(),blocked:true,warning:'No pudimos migrar los registros anteriores. Conservamos el original; exportalo antes de restaurar.'};}
+ let raw;try{raw=storage.getItem(KEY);}catch{return {data:blankDefaults(),warning:'No pudimos leer el almacenamiento del navegador. Exportá tus datos.'};}
+ if(raw){try{return {data:validate(JSON.parse(raw)),warning:''};}catch{return {data:blankDefaults(),blocked:true,warning:'Los datos guardados no se pueden leer. Conservamos el original. Exportá los datos dañados antes de restaurar un respaldo.'};}}
+ try{const legacy=storage.getItem('pa_pilot_v4');if(!legacy)return {data:blankDefaults(),warning:'',fresh:true};const parsed=JSON.parse(legacy);const data=validate(parsed);storage.setItem(KEY,JSON.stringify(data));return {data,warning:'Tus registros anteriores se conservaron en la nueva versión.'};}catch{return {data:blankDefaults(),blocked:true,warning:'No pudimos migrar los registros anteriores. Conservamos el original; exportalo antes de restaurar.'};}
 }
 export function commit(storage,next){const data=validate(next);storage.setItem(KEY,JSON.stringify(data));return data;}
 export function snapshotPlan(d){return {routines:clone(d.routines),week:clone(d.week),sports:clone(d.sports)};}
