@@ -1,0 +1,41 @@
+let libraryPromise;
+export async function getPdfLibrary(){if(globalThis.PDFLib?.PDFDocument)return globalThis.PDFLib;if(!libraryPromise)libraryPromise=import('./vendor/pdf-lib.min.js?v=1').then(()=>{if(!globalThis.PDFLib?.PDFDocument)throw Error('No se pudo cargar el generador PDF.');return globalThis.PDFLib;}).catch(error=>{libraryPromise=null;throw error;});return libraryPromise;}
+async function composer(lib,title,subtitle){
+ const {PDFDocument,StandardFonts,rgb}=lib,doc=await PDFDocument.create(),regular=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold),ink=rgb(.09,.17,.29),blue=rgb(.14,.39,.87),muted=rgb(.32,.40,.50),pale=rgb(.91,.94,.98);
+ doc.setTitle(title);doc.setAuthor('Performance AI');doc.setCreator('Performance AI');let page,y=0,replaced=false;
+ function safe(input){let out='';for(const char of String(input??'').normalize('NFKC').replace(/[\u2010-\u2015]/g,'-').replace(/[\u00a0\u202f]/g,' ').replace(/\t/g,' ')){if(char==='\n'||char==='\r'){out+='\n';continue;}try{regular.encodeText(char);out+=char;}catch{out+='?';replaced=true;}}return out;}
+ function wrap(input,size,font=regular,width=507){const lines=[];for(const paragraph of safe(input).split(/\r?\n/)){if(!paragraph){lines.push('');continue;}let line='';for(const word of paragraph.split(/\s+/)){if(font.widthOfTextAtSize(word,size)>width){if(line){lines.push(line);line='';}let part='';for(const char of word){if(font.widthOfTextAtSize(part+char,size)>width){lines.push(part);part='';}part+=char;}line=part;}else if(font.widthOfTextAtSize((line?line+' ':'')+word,size)>width){lines.push(line);line=word;}else line+=(line?' ':'')+word;}if(line)lines.push(line);}return lines;}
+ function newPage(){if(doc.getPageCount()>=150)throw Error('El informe es demasiado grande. Usá un filtro de deporte o descargá el CSV.');page=doc.addPage([595.28,841.89]);page.drawRectangle({x:0,y:825.89,width:595.28,height:16,color:blue});page.drawText('PERFORMANCE AI',{x:44,y:796,size:9,font:bold,color:blue});y=765;}
+ function reserve(height){if(y-height<61)newPage();}
+ function text(value,{size=10,font=regular,color=ink,gap=6,indent=0}={}){const lines=wrap(value,size,font,507-indent),lineHeight=size*1.4;for(const line of lines){reserve(lineHeight);if(line)page.drawText(line,{x:44+indent,y:y-size,size,font,color});y-=lineHeight;}y-=gap;}
+ function heading(value){reserve(52);y-=7;text(value,{size:14,font:bold,color:blue,gap:9});}
+ function item(title,detail=''){reserve(40);text(title,{size:11,font:bold,gap:3});if(detail)text(detail,{size:10,color:muted,gap:9});}
+ function bar(label,value,max,suffix){reserve(46);text(`${label}  |  ${value} ${suffix}`,{size:10,gap:4});page.drawRectangle({x:44,y:y-10,width:507,height:9,color:pale});if(value>0)page.drawRectangle({x:44,y:y-10,width:507*Math.max(0,value)/Math.max(1,max),height:9,color:blue});y-=22;}
+ newPage();text(title,{size:24,font:bold,color:ink,gap:10});text(subtitle,{size:10,color:muted,gap:14});
+ async function finish(){if(replaced)text('Nota: algunos símbolos no disponibles en la tipografía se reemplazaron por ?.',{size:8,color:muted});const pages=doc.getPages();pages.forEach((p,i)=>{p.drawLine({start:{x:44,y:47},end:{x:551,y:47},thickness:.5,color:pale});p.drawText(`Performance AI  |  ${i+1} / ${pages.length}`,{x:44,y:31,size:8,font:regular,color:muted});});return doc.save();}
+ return {text,heading,item,bar,reserve,finish};
+}
+export async function coachPdf(packet,lib){
+ lib||=await getPdfLibrary();
+ const c=await composer(lib,'Planificación de entrenamiento',`Semana: ${packet.weekStart} al ${packet.weekEnd}  |  Creado: ${packet.created}`);
+ if(packet.note){c.heading('Comentario para el entrenador');c.text(packet.note);}
+ c.heading('Semana propuesta');for(const day of packet.week){c.reserve(80);c.item(`${day.day} - ${day.date}`);if(!day.activities.length)c.text('Sin actividades programadas.',{indent:12});for(const a of day.activities)c.text(`${a.title}${a.isRest?' - Descanso / sin sesión':' - '+a.sport}${a.routineTitle?' - Rutina: '+a.routineTitle:''}`,{indent:12});}
+ if(packet.includeRoutines){c.heading('Rutinas guardadas');c.text('Se incluyen las rutinas elegidas en la ficha; no todas tienen que estar programadas.',{size:9});if(!packet.routines.length)c.text('Sin rutinas guardadas.');for(const r of packet.routines){c.reserve(110);c.item(r.title,r.sport+(r.warm?' - '+r.warm:''));r.ex.forEach((ex,i)=>c.text(`${i+1}. ${ex[0]} - ${ex[1]}`,{indent:12,gap:5}));}}
+ if(packet.recent){c.heading('Carga real registrada - últimos 28 días');for(const w of packet.recent.weeks)c.text(`${w.start} al ${w.end}: ${w.sessions} sesiones - ${w.minutes} min - carga ${w.load} u.`);c.text('Son cuatro tramos de siete días. Un período sin registros no confirma descanso.',{size:9});}
+ c.text('Copia de tu planificación actual para revisar con el entrenador. No acredita sesiones completadas ni se sincroniza con los cambios que haga el destinatario.',{size:9,gap:0});return c.finish();
+}
+export async function monthlyPdf(report,lib){
+ lib||=await getPdfLibrary();
+ const c=await composer(lib,'Informe mensual de entrenamiento',`${report.month}  |  Hasta ${report.cutoff}  |  ${report.sport||'Todos los deportes'}${report.current?'  |  Mes en curso':''}`),t=report.totals;
+ c.heading('Resumen de actividad registrada');c.text(`Sesiones: ${t.sessions}  |  Días con registros: ${t.days}  |  Minutos: ${t.minutes}`);c.text(`Carga estimada: ${t.load} u.  |  RPE medio por sesión: ${t.avgRpe??'Sin datos'}`);
+ if(!t.sessions)c.text('No hay actividades registradas en el período y filtro. Esto no permite concluir que no entrenaste.');if(report.future)c.text(`${report.future} registros con fecha futura no se incluyen.`);
+ c.heading('Comparación con el mes anterior');c.text(`Actual: ${report.month}-01 al ${report.cutoff}. Anterior: ${report.previousMonth}-01 al ${report.previousEnd}.`);c.text(`Período anterior: ${report.previous.sessions} sesiones - ${report.previous.minutes} min - carga ${report.previous.load} u.`);c.text('En un mes en curso se compara el mismo tramo, limitado a la duración del mes anterior. Más carga no confirma por sí sola mejora de rendimiento.',{size:9});
+ c.heading('Tiempo por semana del mes');for(const w of report.weeks)c.bar(`Días ${w.label}`,w.minutes,Math.max(1,...report.weeks.map(x=>x.minutes)),'min');
+ c.heading('Tiempo por deporte');if(!report.bySport.length)c.text('Sin datos para el filtro seleccionado.');for(const sport of report.bySport)c.bar(sport.label,sport.minutes,Math.max(1,...report.bySport.map(x=>x.minutes)),'min');
+ c.reserve(350);c.heading('Últimos seis meses - minutos');for(const month of report.trend)c.bar(month.month+(month.partial?' (en curso)':''),month.minutes,Math.max(1,...report.trend.map(x=>x.minutes)),'min');for(const month of report.trend)c.text(`${month.month}: ${month.sessions} sesiones - ${month.minutes} min - carga ${month.load} u.${month.partial?' (mes parcial)':''}`,{size:9,gap:4});
+ c.heading('Rutinas realizadas');if(!report.byRoutine.length)c.text('Sin rutinas registradas.');for(const r of report.byRoutine)c.item(r.label.name,`${r.label.sport} - ${r.sessions} sesiones - ${r.minutes} min - carga ${r.load} u.`);
+ c.heading('Marcas anotadas en el mes');if(report.sport)c.text('Las marcas no tienen un deporte asociado; se muestran solo con Todos los deportes.');else if(!report.marks.length)c.text('Sin marcas anotadas.');else for(const m of report.marks)c.text(`${m.date} - ${m.exercise}: ${m.weight} kg x ${m.reps} reps`);
+ c.heading('Detalle de sesiones');if(!report.sessions.length)c.text('Sin sesiones para mostrar.');for(const s of report.sessions)c.item(`${s.date} - ${s.sport}`,`${s.routineTitle||'Sin rutina registrada'} - ${s.duration} min - RPE ${s.rpe} - carga ${s.duration*s.rpe} u.`);
+ c.text('Este informe describe los datos registrados. Los días sin registros no confirman descanso. La carga estimada no mide calorías, volumen de pesas ni riesgo de lesión.',{size:9});return c.finish();
+}
+export function downloadPdf(bytes,filename){const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),300000);return {url,filename};}

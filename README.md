@@ -73,3 +73,23 @@ La otra persona abre el enlace, revisa la vista previa en Deportes y datos y eli
 Entrenar incluye botones RPE de 1 a 10, descripciones de referencia y un campo numérico sincronizado que sigue admitiendo incrementos de 0,5. Los puntos de referencia son 1 muy suave, 2 suave, 3 moderado, 4 algo duro, 5 duro, 7 muy duro y 10 máximo; los intermedios se indican como tales. Se valora la sesión completa, no las repeticiones en reserva de una serie. Referencia: https://www.world.rugby/the-game/player-welfare/medical/player-load/coaches-guidance?lang=en (apéndice RPE). No se transforma el esfuerzo previsto en esfuerzo real automáticamente.
 
 Pruebas adicionales: `node --test routine-exchange.test.mjs`. La recepción de enlaces, importación con confirmación, conservación de datos y selección RPE se comprueban también en navegador. El envío nativo a una aplicación destinataria concreta debe comprobarse en el dispositivo real; las pruebas no envían mensajes a personas.
+
+## Ficha simple, PDF directo y registro local (V10)
+
+La ficha del entrenador (vista previa, texto, HTML, CSV y PDF) muestra días, actividades y rutinas, sin duración prevista, RPE previsto ni totales de carga prevista. Los campos de previsión siguen disponibles para uso dentro del plan. El resumen de carga real reciente continúa siendo opcional y está desmarcado por defecto.
+
+Descargar PDF genera un archivo PDF real en el navegador, mediante la copia local de pdf-lib (licencia MIT en vendor/pdf-lib.LICENSE.md). No usa window.print ni depende de imprimir desde un diálogo. Incluye paginación, ajuste de líneas, gráficos vectoriales en informes mensuales y mensajes de progreso/error. Después de generarlo ofrece también un enlace Guardar PDF generado por si el navegador bloquea la descarga automática. No requiere servicio externo. Los caracteres no disponibles en la fuente del PDF se sustituyen por ? con una nota, para evitar errores de codificación. Se revisan PDFs renderizados y las descargas reales en navegador; falta verificar el comportamiento de descarga en un iPhone físico.
+
+Al abrir una instalación sin perfil se solicita nombre, fecha de nacimiento, peso en kg y altura en cm. No se requieren correo ni contraseña. Es un perfil local, no autenticación ni una cuenta sincronizada. Se valida fecha no futura y valores numéricos; se puede editar en Deportes y datos → Mi perfil. Los datos anteriores de entrenamiento se conservan. Un respaldo completo incluye el perfil y debe guardarse como archivo personal; las fichas del entrenador, enlaces de app/rutina y consultas del Coach no lo incluyen automáticamente. Al restaurar un respaldo antiguo sin campo profile se conserva el perfil actual.
+
+Pruebas: `node --test *.test.mjs`, incluyendo profile-pdf.test.mjs. Los datos ficticios usados para QA de PDF no se incorporan a la app publicada.
+
+## Reordenar y editar rutinas (V11)
+
+Rutinas y ejercicios tienen asas ⠿ para reordenar por arrastre. Las asas usan Pointer Events y touch-action:none para separar el gesto del desplazamiento de la página. También se pueden enfocar y mover con flechas arriba/abajo. Las listas guardadas se persisten al soltar y admiten Deshacer; el editor mantiene sus cambios como borrador hasta Guardar rutina. El gesto no mueve ejercicios entre rutinas diferentes.
+
+El editor separa nombre, series, repeticiones/rango y objetivo de esfuerzo: sin objetivo, RIR 0, 1, 2, 3 o fallo. Se permiten series con objetivo RIR/fallo sin fijar repeticiones. RIR por serie se diferencia de la escala RPE global del registro. Para tiempos, escaleras y otros formatos se conserva Detalle libre. Los ejercicios antiguos no se reinterpretan sin guardar; los formatos conocidos se precargan y los ambiguos quedan como texto.
+
+Los ejercicios conservan los dos primeros valores `[nombre, detalle]` para compatibilidad y pueden añadir un tercer objeto de prescripción estructurada. Normalizar, respaldar e intercambiar rutinas conserva ese objeto y genera un detalle legible para PDF/texto. Pruebas: exercise-data.test.mjs. La barra inferior duplicada se quitó: en móvil queda la navegación superior.
+
+Apple Health no está conectado en esta web. Leer pasos mediante HealthKit requiere una app/puente nativo y autorización del usuario para ese tipo de dato. No se muestran pasos simulados ni se pide un permiso de HealthKit desde Safari. Esa integración queda para una versión de iOS, fuera de estos cambios web.

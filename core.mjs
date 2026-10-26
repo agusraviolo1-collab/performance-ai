@@ -1,3 +1,4 @@
+import {exercisePair} from './exercise-data.mjs?v=11';
 import { BASE, WEEK, SPORTS } from './base.mjs';
 export const KEY='pa_v6';
 export const clone=x=>JSON.parse(JSON.stringify(x));
@@ -5,9 +6,18 @@ export const uid=()=>globalThis.crypto.randomUUID();
 export const clean=(x,max=160)=>String(x??'').trim().slice(0,max);
 export const localDate=(d=new Date())=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 export function validDate(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;const d=new Date(s+'T12:00:00');return Number.isFinite(+d)&&localDate(d)===s;}
-export function defaults(){return {version:6,sessions:[],marks:[],sports:SPORTS.slice(0,5),routines:BASE.map(r=>({...clone(r),sport:'Gimnasio'})),week:WEEK.map((w,i)=>[{id:'base-'+i,title:w[1],sport:[0,1,4].includes(i)?'Gimnasio':[2,5].includes(i)?'Fútbol':'Movilidad / yoga',routineId:BASE.some(r=>r.id===w[2])?w[2]:null,plannedDuration:null,plannedRpe:null,isRest:i===6}]),planBackup:null};}
+export function defaults(){return {version:6,profile:null,sessions:[],marks:[],sports:SPORTS.slice(0,5),routines:BASE.map(r=>({...clone(r),sport:'Gimnasio'})),week:WEEK.map((w,i)=>[{id:'base-'+i,title:w[1],sport:[0,1,4].includes(i)?'Gimnasio':[2,5].includes(i)?'Fútbol':'Movilidad / yoga',routineId:BASE.some(r=>r.id===w[2])?w[2]:null,plannedDuration:null,plannedRpe:null,isRest:i===6}]),planBackup:null};}
 function requireThat(ok,msg){if(!ok)throw Error(msg);}
 export function blankDefaults(){return {...defaults(),routines:[],week:Array.from({length:7},()=>[]),planBackup:null};}
+export function validateProfile(input,today=localDate()){
+ requireThat(input&&typeof input==='object','Completá tu perfil.');
+ const name=clean(input.name,80),birthDate=input.birthDate,weightKg=input.weightKg,heightCm=input.heightCm;
+ requireThat(name,'Ingresá tu nombre.');
+ requireThat(validDate(birthDate)&&birthDate>='1900-01-01'&&birthDate<=today,'Ingresá una fecha de nacimiento válida, no futura.');
+ requireThat(Number.isFinite(weightKg)&&weightKg>=.5&&weightKg<=500,'Ingresá un peso entre 0,5 y 500 kg.');
+ requireThat(Number.isFinite(heightCm)&&heightCm>=30&&heightCm<=300,'Ingresá una altura entre 30 y 300 cm.');
+ return {name,birthDate,weightKg,heightCm};
+}
 export function plannedFields(a){const duration=a.plannedDuration??null,rpe=a.plannedRpe??null;requireThat(duration===null||(Number.isInteger(duration)&&duration>=1&&duration<=600),'La duración prevista debe ser de 1 a 600 minutos.');requireThat(rpe===null||(Number.isFinite(rpe)&&rpe>=1&&rpe<=10),'El esfuerzo previsto debe estar entre 1 y 10.');const isRest=a.isRest===true;return {plannedDuration:isRest?null:duration,plannedRpe:isRest?null:rpe,isRest};}
 export function normalizeRoutines(rows){
  requireThat(Array.isArray(rows)&&rows.length<=100,'Se esperan hasta 100 rutinas.');
@@ -16,13 +26,14 @@ export function normalizeRoutines(rows){
   const title=clean(r.title??r.nombre),sport=clean(r.sport??'Gimnasio',60);
   requireThat(title&&sport,'Cada rutina necesita nombre y deporte.');
   const input=r.ex??r.ejercicios;requireThat(Array.isArray(input)&&input.length>0&&input.length<=150,'Cada rutina necesita entre 1 y 150 ejercicios.');
-  const ex=input.map(e=>{const name=clean(Array.isArray(e)?e[0]:e.nombre??e.ejercicio);const dose=clean(Array.isArray(e)?e[1]:e.detalle??[e.series,e.repeticiones].filter(x=>x!=null).join(' × '));requireThat(name&&dose,'Cada ejercicio necesita nombre y series/repeticiones o detalle.');return [name,dose];});
+  const ex=input.map(e=>{const name=clean(Array.isArray(e)?e[0]:e.nombre??e.ejercicio);const dose=clean(Array.isArray(e)?e[1]:e.detalle??[e.series,e.repeticiones].filter(x=>x!=null).join(' × '));const structured=Array.isArray(e)?e[2]:e.prescription;if(structured)return exercisePair(name,structured);requireThat(name&&dose,'Cada ejercicio necesita nombre y series/repeticiones o detalle.');return [name,dose];});
   return {id:clean(r.id,80)||'import-'+i+'-'+uid(),title,sport,warm:clean(r.warm??'',500),ex};
  });
 }
 export function validate(raw){
  requireThat(raw&&typeof raw==='object'&&!Array.isArray(raw),'Respaldo inválido.');
  const d=defaults();
+ d.profile=raw.profile==null?null:validateProfile(raw.profile);
  for(const key of ['sessions','marks','sports'])requireThat(Array.isArray(raw[key]),'Falta la lista '+key+'.');
  d.sports=[...new Set(raw.sports.map(s=>clean(s,60)).filter(Boolean))];requireThat(d.sports.length>0&&d.sports.length<=100,'Seleccioná entre 1 y 100 deportes.');
  d.sessions=raw.sessions.map(s=>{requireThat(s&&clean(s.sport)&&Number.isFinite(s.duration)&&s.duration>0&&s.duration<=600&&Number.isFinite(s.rpe)&&s.rpe>=1&&s.rpe<=10&&validDate(s.date),'Hay actividades con datos inválidos.');return {id:clean(s.id,80)||uid(),sport:clean(s.sport,60),duration:s.duration,rpe:s.rpe,date:s.date,note:clean(s.note,500),routineId:clean(s.routineId,80)||null,routineTitle:clean(s.routineTitle)};});

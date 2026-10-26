@@ -1,3 +1,4 @@
+import {monthlyPdf,downloadPdf} from './pdf-export.mjs?v=10';
 import {monthKey,shiftMonth,monthlyReport,reportCsv} from './reports.mjs';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>new Intl.NumberFormat('es-AR',{maximumFractionDigits:1}).format(n);
@@ -10,6 +11,7 @@ export function mountReports(getData){
  let report=null;
  $('reportMonth').value=monthKey();$('reportMonth').max=monthKey();
  function render(){
+ $('monthlyPdfLink').classList.add('hide');
   const db=getData(),selected=$('reportSport').value,sports=[...new Set(db.sessions.map(s=>s.sport))].sort((a,b)=>a.localeCompare(b,'es'));
   $('reportSport').innerHTML='<option value="">Todos los deportes</option>'+sports.map(s=>`<option value="${esc(s)}" ${s===selected?'selected':''}>${esc(s)}</option>`).join('');
   try{report=monthlyReport(db,{month:$('reportMonth').value,sport:$('reportSport').value});$('reportError').textContent='';$('reportBody').classList.remove('hide');}catch(err){report=null;$('reportError').textContent=err.message;$('reportBody').classList.add('hide');$('prevMonth').disabled=true;$('nextMonth').disabled=true;return;}
@@ -28,6 +30,6 @@ export function mountReports(getData){
  for(const id of ['reportMonth','reportSport','trendMetric'])$(id).addEventListener('change',render);
  $('prevMonth').onclick=()=>{$('reportMonth').value=shiftMonth($('reportMonth').value,-1);render();};$('nextMonth').onclick=()=>{$('reportMonth').value=shiftMonth($('reportMonth').value,1);render();};
  $('exportReport').onclick=()=>{if(!report)return;const a=document.createElement('a'),url=URL.createObjectURL(new Blob([reportCsv(report)],{type:'text/csv;charset=utf-8'}));a.href=url;a.download='performance-ai-informe-'+report.month+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);};
- $('printReport').onclick=()=>{if(!report)return;document.body.classList.add('printing-report');window.print();};window.addEventListener('afterprint',()=>document.body.classList.remove('printing-report'));
+ $('printReport').onclick=async()=>{if(!report||$('printReport').disabled)return;const snapshot=report;$('printReport').disabled=true;$('reportPdfStatus').textContent='Generando PDF…';try{const bytes=await monthlyPdf(snapshot);const ready=downloadPdf(bytes,'performance-ai-informe-'+snapshot.month+'.pdf');$('monthlyPdfLink').href=ready.url;$('monthlyPdfLink').download=ready.filename;$('monthlyPdfLink').classList.remove('hide');$('reportPdfStatus').textContent='PDF listo. Si no se abrió la descarga, tocá Guardar PDF generado.';}catch(error){$('reportPdfStatus').textContent='No se pudo generar el PDF. Revisá la conexión y recargá la app.';}finally{$('printReport').disabled=false;}};window.addEventListener('afterprint',()=>document.body.classList.remove('printing-report'));
  return {render};
 }
