@@ -96,3 +96,5 @@ Apple Health no está conectado en esta web. Leer pasos mediante HealthKit requi
 
 
 V12: acceso a editar perfil junto a la versión. Preferencias de recordatorios locales: hora, días, aviso tras 2/3/5/7/14 días sin registros y ocultar por hoy. Se muestran al abrir o mantener visible la app; no hay push ni solicitud de permiso ficticia. Exportación ICS RFC 5545 con 8 repeticiones por día del plan, alarma y UID estable; excluye descansos, perfil e historial. El usuario importa el calendario y revisa alertas; no se sincroniza y debe retirar eventos anteriores si cambia el plan. Para push cerrado en iPhone hace falta un servicio de envío/programación, suscripción explícita y PWA instalada.
+
+V13: Mi plan muestra primero los siete días en filas desplegables compactas; conserva la apertura al guardar cambios. Compartir y revisar cargas queda debajo de las rutinas. Las rutinas cerradas muestran título, deporte, cantidad de ejercicios y asa en una sola cabecera; las acciones están dentro. Modo Ordenar pliega las rutinas y permite mover desde asas de 44 px, con umbral de arrastre, posición de destino visible y alternativa por teclado.
