@@ -3,7 +3,7 @@ import {planForDate,weekAt,monday,addDays,dayPlanLabel} from './sport-data.mjs?v
 import {mountReminders} from './reminder-view.mjs?v=14';
 import {mountRoutineEditor} from './routine-editor.mjs?v=14';
 import {mountProfile} from './profile.mjs?v=14';
-import {mountRoutineExchange} from './routine-exchange.mjs?v=16';
+import {mountRoutineExchange} from './routine-exchange.mjs?v=17';
 import {mountRpeGuide} from './rpe-guide.mjs?v=14';
 import {mountPlanShare} from './plan-share-view.mjs?v=14';
 import {mountReports} from './report-view.mjs?v=14';
