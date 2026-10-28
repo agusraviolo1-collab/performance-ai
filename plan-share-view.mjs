@@ -1,6 +1,6 @@
-import {weekAt} from './sport-data.mjs?v=24';
-import {coachPdf,downloadPdf} from './pdf-export.mjs?v=24';
-import {nextMonday,buildPlanPackage,planText,planFragment,planHtml,planCsv,planTotals} from './plan-share.mjs?v=24';
+import {weekAt} from './sport-data.mjs?v=25';
+import {coachPdf,downloadPdf} from './pdf-export.mjs?v=25';
+import {nextMonday,buildPlanPackage,planText,planFragment,planHtml,planCsv,planTotals} from './plan-share.mjs?v=25';
 const $=id=>document.getElementById(id);
 export function mountPlanShare(getData,available=()=>true){
  let packet=null,sharing=false;

@@ -1,16 +1,17 @@
-import {migrateMobilityRoutine} from './mobility-routine.mjs?v=24';
-import {mountTodayRoutine} from './today-routine.mjs?v=24';
-import {mountSportViews} from './sport-view.mjs?v=24';
-import {planForDate,weekAt,monday,addDays,dayPlanLabel,activityStatus,statusLabel,progressFor} from './sport-data.mjs?v=24';
-import {mountReminders} from './reminder-view.mjs?v=24';
-import {mountRoutineEditor} from './routine-editor.mjs?v=24';
-import {mountProfile} from './profile.mjs?v=24';
-import {mountRoutineExchange} from './routine-exchange.mjs?v=24';
-import {mountRpeGuide} from './rpe-guide.mjs?v=24';
-import {mountPlanShare} from './plan-share-view.mjs?v=24';
-import {mountReports} from './report-view.mjs?v=24';
-import {WEEK,SPORTS} from './base.mjs?v=24';
-import {KEY,clone,uid,clean,localDate,defaults,load,commit,planChange,undoPlan,removeRoutine,parseImport,applyImport,weekSessions,validate} from './core.mjs?v=24';
+import {weeklyFeedback,comparableMarks} from './training-feedback.mjs?v=25';
+import {migrateMobilityRoutine} from './mobility-routine.mjs?v=25';
+import {mountTodayRoutine} from './today-routine.mjs?v=25';
+import {mountSportViews} from './sport-view.mjs?v=25';
+import {planForDate,weekAt,monday,addDays,dayPlanLabel,activityStatus,statusLabel,progressFor} from './sport-data.mjs?v=25';
+import {mountReminders} from './reminder-view.mjs?v=25';
+import {mountRoutineEditor} from './routine-editor.mjs?v=25';
+import {mountProfile} from './profile.mjs?v=25';
+import {mountRoutineExchange} from './routine-exchange.mjs?v=25';
+import {mountRpeGuide} from './rpe-guide.mjs?v=25';
+import {mountPlanShare} from './plan-share-view.mjs?v=25';
+import {mountReports} from './report-view.mjs?v=25';
+import {WEEK,SPORTS} from './base.mjs?v=25';
+import {KEY,clone,uid,clean,localDate,defaults,load,commit,planChange,undoPlan,removeRoutine,parseImport,applyImport,weekSessions,validate} from './core.mjs?v=25';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let storage;try{storage=localStorage;}catch{storage={getItem(){throw Error('Almacenamiento no disponible');},setItem(){throw Error('Almacenamiento no disponible');}};}
 const initial=load(storage);let db=initial.data,blocked=!!initial.blocked,editActivity=null,editRoutine=null,importDraft=null,importGeneration=0,chat=[],token='',busy=false;
@@ -31,12 +32,13 @@ function go(id){if(!['inicio','plan','entrenar','progreso','coach','ajustes'].in
 document.querySelectorAll('[data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===id);b.setAttribute('aria-current',b.dataset.tab===id?'page':'false');});document.querySelector('.tabs [data-tab="'+id+'"]').scrollIntoView({block:'nearest',inline:'nearest'});window.scrollTo(0,0);}
 document.addEventListener('click',e=>{if(e.target.closest('[data-open-today-session]'))document.dispatchEvent(new CustomEvent('performance:open-session',{detail:{date:localDate()}}));});
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).close()));
-function advice(){const sessions=weekSessions(db),sum=sessions.reduce((n,s)=>n+s.duration*s.rpe,0);return sessions.length?`Registraste ${sessions.length} actividad(es). La carga suma solo registros que incluyen duración: ${sum} unidades esta semana. Compará varias semanas antes de sacar conclusiones sobre tu recuperación.`:'Todavía no registraste actividades esta semana. Después de entrenar, elegí la actividad y su esfuerzo para seguir tu constancia.';}
+function advice(){const f=weeklyFeedback(db);return f.sessions?`Registraste ${f.sessions} actividad(es) en ${f.days} día(s). Esfuerzo medio: RPE ${Number(f.avgRpe.toFixed(1)).toLocaleString('es-AR')}/10. ${f.timedSessions?'Duración anotada en '+f.timedSessions+' de '+f.sessions+' sesiones; carga conocida '+f.load+' u.':'Carga sin calcular: tus registros no incluyen duración.'}`:'Todavía no hay actividades registradas esta semana. Elegí lo que hiciste y el esfuerzo que sentiste.';}
+
 function routineChoices(sport){const list=db.routines.filter(r=>r.sport===sport);return [['','Sin rutina / actividad libre'],...list.map(r=>[r.id,r.title])];}
 function sessionRoutineRender(){const old=$('activityRoutine').value,choices=routineChoices($('activitySport').value);$('activityRoutine').innerHTML=options(choices,choices.some(x=>x[0]===old)?old:'');$('routineHint').textContent=choices.length===1?'No hay rutinas para este deporte. Podés crear una en Mi plan.':'La rutina quedará identificada en tu historial aunque después la edites o elimines.';}
 
 let homeWeekStart=monday();
-function renderHomeWeek(){
+function renderHomeWeek(){const feedback=weeklyFeedback(db);$('weekProgressFeedback').classList.toggle('hide',homeWeekStart!==monday());$('weekProgressFeedback').textContent=`Hasta hoy: ${feedback.completedUntilToday} de ${feedback.plannedUntilToday} completas${feedback.partialUntilToday?' · '+feedback.partialUntilToday+' parciales':''}. ${feedback.pendingToday} pendiente(s) de hoy · ${feedback.overduePending} anteriores sin completar · ${feedback.futurePlanned} futuras.`;
  const title=document.getElementById('homeWeekTitle');if(title)title.textContent=homeWeekStart===monday()?'Esta semana':'Semana del '+new Date(homeWeekStart+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'});
  $('miniWeek').innerHTML=weekAt(db,homeWeekStart).map((items,i)=>{const date=addDays(homeWeekStart,i),progress=progressFor(db,date);return `<div class="day ${progress.allComplete?'week-day-complete':''}"><div class="daynum">${WEEK[i][0]}<span class="small" style="display:block">${date.slice(8)}/${date.slice(5,7)}</span></div><div class="daybody">${items.length?items.map(a=>{const status=activityStatus(db,a,date);return a.isRest?`<div class="daytitle">${esc(a.title)} · Descanso</div>`:`<button type="button" class="home-plan-activity ${status==='complete'?'activity-complete':''}" data-register-planned="${esc(a.id)}" data-planned-date="${date}" ${date>localDate()?'disabled':''}><strong>${esc(a.title)}</strong><span class="activity-status">${statusLabel(status)}</span><span class="small">${date>localDate()?'Fecha futura':status==='complete'?'Ver / editar registro':status==='partial'?'Completar registro':'Registrar actividad'} →</span></button>`;}).join(''):'Sin actividad'}${progress.allComplete?'<span class="activity-status">✓ Día completo</span>':''}</div>${date===localDate()?'<span class="tag">Hoy</span>':''}</div>`;}).join('');
 }
@@ -90,7 +92,8 @@ $('coachForm').addEventListener('submit',async e=>{e.preventDefault();if(busy)re
 $('activityDate').value=localDate();render();aiStatus();if(initial.warning)notice(initial.warning,blocked);if(blocked)$('exportRaw').classList.remove('hide');go('inicio');
 
 function renderMarksAdvice(){
- const last=db.marks.at(-1);$('markReminder').textContent=!last?'Todavía no hay marcas. Podés actualizarlas aproximadamente una vez al mes.':((new Date()-new Date(last.date+'T12:00:00'))/86400000>=30?'Pasaron unos 30 días desde tu última marca. Podés revisar tu progreso.':'Última actualización: '+last.date+'. No necesitás cargar marcas en cada sesión.');
+ const comparisons=comparableMarks(db.marks);$('markComparisons').innerHTML=comparisons.length?'<h3 class="spaced">Tus marcas comparables</h3>'+comparisons.map(row=>`<div class="item"><strong>${esc(row.exercise)}</strong><p class="small">Última: ${row.latest.weight} kg × ${row.latest.reps} · ${esc(row.latest.date)}<br>${row.previous?'Anterior con '+row.latest.reps+' reps: '+row.previous.weight+' kg · '+esc(row.previous.date)+' · diferencia '+(row.deltaKg>0?'+':'')+Number(row.deltaKg.toFixed(2))+' kg':'Todavía no hay otra marca con las mismas repeticiones.'}</p></div>`).join('')+'<p class="subtle">Compara solo el peso anotado con las mismas repeticiones. La técnica, el esfuerzo y las condiciones también influyen; esta diferencia no demuestra por sí sola una mejora física.</p>':'';
+ const last=db.marks.slice().sort((a,b)=>a.date.localeCompare(b.date)).at(-1);$('markReminder').textContent=!last?'Todavía no hay marcas. Podés actualizarlas aproximadamente una vez al mes.':((new Date()-new Date(last.date+'T12:00:00'))/86400000>=30?'Pasaron unos 30 días desde tu última marca. Podés revisar tu progreso.':'Última actualización: '+last.date+'. No necesitás cargar marcas en cada sesión.');
  const plateau=[...new Set(db.marks.map(m=>m.exercise))].filter(n=>{const a=db.marks.filter(m=>m.exercise===n).slice(-3);return a.length===3&&a.every(m=>m.weight===a[0].weight&&m.reps===a[0].reps);});
  $('plateau').textContent=plateau.length?'Tres marcas iguales en '+plateau.join(', ')+'. Revisá técnica, esfuerzo y recuperación; por sí solas no prueban una meseta.':'Todavía no hay evidencia suficiente de mesetas. Se necesitan al menos tres marcas comparables por ejercicio.';
 }
