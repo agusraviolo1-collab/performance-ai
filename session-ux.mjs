@@ -1,0 +1,3 @@
+export function isSessionDraftDirty(initial,current,ignored=[]){if(!initial)return false;return Object.keys(initial).some(key=>!ignored.includes(key)&&String(initial[key]??'')!==String(current[key]??''));}
+export function sameSessionTarget(session,date,activity){if(!session||session.date!==date||!activity)return false;return session.planActivityId?session.planActivityId===activity.id:!!session.routineId&&session.routineId===activity.routineId&&session.sport===activity.sport;}
+export function sessionRoutineTitle(routine,previous,preservePrevious){return preservePrevious?String(previous?.routineTitle??''):String(routine?.title??'');}

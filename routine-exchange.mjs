@@ -1,5 +1,5 @@
-import {encodeRoutine,decodeRoutine} from './routine-codec.mjs?v=20';
-import {normalizeRoutines,localDate} from './core.mjs?v=20';
+import {encodeRoutine,decodeRoutine} from './routine-codec.mjs?v=24';
+import {normalizeRoutines,localDate} from './core.mjs?v=24';
 export const MAX_LINK_LENGTH=8000;
 export function routinePackage(routine,today=localDate()){
  const [r]=normalizeRoutines([routine]);return {format:'performance-ai-routine',version:1,exported:today,routines:[{title:r.title,sport:r.sport,warm:r.warm,ex:r.ex.map(e=>[...e])}]};

@@ -1,4 +1,5 @@
-import {localDate,validDate,clean,plannedFields} from './core.mjs?v=20';
+import {localDate,validDate,clean,plannedFields} from './core.mjs?v=24';
+import {durationCoverage} from './sport-data.mjs?v=24';
 const DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 export const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const round=n=>Math.round(n*10)/10;
@@ -11,8 +12,8 @@ export function buildPlanPackage(db,{weekStart=nextMonday(),includeRoutines=true
  const routines=includeRoutines?db.routines.map(r=>({id:r.id,title:r.title,sport:r.sport,warm:r.warm,ex:r.ex.map(e=>[...e])})):[];
  const week=db.week.map((items,i)=>({day:DAYS[i],date:dateAdd(weekStart,i),activities:items.map(a=>({title:a.title,sport:a.sport,routineTitle:db.routines.find(r=>r.id===a.routineId)?.title||'',...plannedFields(a)}))}));
  const result={created:today,weekStart,weekEnd:dateAdd(weekStart,6),note:clean(note,1000),week,routines,includeRoutines,totals:planTotals(db.week)};
- if(includeRecent){const start=dateAdd(today,-27);result.recent={start,end:today,weeks:Array.from({length:4},(_,i)=>{const a=dateAdd(start,i*7),b=dateAdd(a,6),sessions=db.sessions.filter(s=>s.date>=a&&s.date<=b);return {start:a,end:b,sessions:sessions.length,minutes:sessions.length&&sessions.every(s=>s.duration==null)?null:round(sessions.reduce((n,s)=>n+s.duration,0)),load:sessions.length&&sessions.every(s=>s.duration==null)?null:round(sessions.reduce((n,s)=>n+s.duration*s.rpe,0))};})};}
+ if(includeRecent){const start=dateAdd(today,-27);result.recent={start,end:today,weeks:Array.from({length:4},(_,i)=>{const a=dateAdd(start,i*7),b=dateAdd(a,6),sessions=db.sessions.filter(s=>s.date>=a&&s.date<=b);const coverage=durationCoverage(sessions);return {start:a,end:b,sessions:sessions.length,...coverage,minutes:coverage.minutes===null?null:round(coverage.minutes),load:coverage.load===null?null:round(coverage.load)};})};}
  return result;
 }
 
-export {planText,planFragment,planHtml,planCsv,planDocumentCss} from './coach-sheet.mjs?v=20';
+export {planText,planFragment,planHtml,planCsv,planDocumentCss} from './coach-sheet.mjs?v=24';

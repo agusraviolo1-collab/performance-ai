@@ -1,10 +1,11 @@
-import {localDate,validDate} from './core.mjs?v=20';
+import {durationCoverage} from './sport-data.mjs?v=24';
+import {localDate,validDate} from './core.mjs?v=24';
 export const monthKey=(date=localDate())=>date.slice(0,7);
 export function shiftMonth(key,offset){const [y,m]=key.split('-').map(Number);const d=new Date(Date.UTC(y,m-1+offset,1));return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;}
 export function monthDays(key){const [y,m]=key.split('-').map(Number);return new Date(Date.UTC(y,m,0)).getUTCDate();}
 const endDate=(key,day)=>`${key}-${String(day).padStart(2,'0')}`;
 const round=n=>Math.round(n*10)/10;
-export function summarize(sessions){return {sessions:sessions.length,days:new Set(sessions.map(s=>s.date)).size,minutes:sessions.length&&sessions.every(s=>s.duration==null)?null:round(sessions.reduce((sum,s)=>sum+s.duration,0)),load:sessions.length&&sessions.every(s=>s.duration==null)?null:round(sessions.reduce((sum,s)=>sum+s.duration*s.rpe,0)),avgRpe:sessions.length?round(sessions.reduce((sum,s)=>sum+s.rpe,0)/sessions.length):null};}
+export function summarize(sessions){const coverage=durationCoverage(sessions);return {sessions:sessions.length,days:new Set(sessions.map(s=>s.date)).size,...coverage,minutes:coverage.minutes===null?null:round(coverage.minutes),load:coverage.load===null?null:round(coverage.load),avgRpe:sessions.length?round(sessions.reduce((sum,s)=>sum+s.rpe,0)/sessions.length):null};}
 function groups(sessions,key,label){const map=new Map();for(const s of sessions){const k=key(s);if(!map.has(k))map.set(k,[]);map.get(k).push(s);}return [...map.entries()].map(([key,rows])=>({key,label:label(rows),...summarize(rows)})).sort((a,b)=>b.minutes-a.minutes||String(a.label.name??a.label).localeCompare(String(b.label.name??b.label),'es'));}
 export function monthlyReport(db,{month=monthKey(),sport='',today=localDate()}={}){
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||Number(month.slice(0,4))<1900||!validDate(today))throw Error('Seleccioná un mes válido.');
@@ -23,3 +24,5 @@ export function monthlyReport(db,{month=monthKey(),sport='',today=localDate()}={
 }
 function csvCell(value){let s=String(value??'');if(/^[=+\-@\t\r\n]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';}
 export function reportCsv(report){const rows=[['Informe mensual',report.month],['Filtro deporte',report.sport||'Todos'],['Periodo','01 a '+report.cutoff],['Sesiones',report.totals.sessions],['Dias con registros',report.totals.days],['Minutos',report.totals.minutes],['Carga estimada RPE',report.totals.load],['RPE medio por sesion',report.totals.avgRpe??'Sin datos'],[],['Fecha','Deporte','Rutina registrada','Duracion minutos','RPE','Carga estimada']];for(const s of report.sessions)rows.push([s.date,s.sport,s.routineTitle||'Sin rutina registrada',s.duration,s.rpe,s.duration==null?null:round(s.duration*s.rpe)]);return '\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');}
+
+export function sportReportCsv(report){const rows=[['Enfoque',report.focus],['Mes',report.month],['Sesiones',report.sessions.length],['Sesiones con duración',report.timedSessions],['Sesiones sin duración',report.missingDuration],['Minutos conocidos',report.minutes],['Minutos jugados anotados',report.matches?report.played:null],[],['Categoria','Sesiones con esta actividad','Minutos conocidos','Distancia anotada km','Tramos con distancia'],...report.categories.map(c=>[c.name,c.sessions,c.minutes,c.distanceRecords?c.distanceKm:null,c.distanceRecords]),[],['Fecha','Deporte','Rutina','RPE','Duracion anotada min'],...report.sessions.map(s=>[s.date,s.sport,s.routineTitle||'',s.rpe,s.duration])];return '\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');}

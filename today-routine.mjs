@@ -1,5 +1,5 @@
-import {planForDate,activityStatus,statusLabel} from './sport-data.mjs?v=20';
-import {localDate} from './core.mjs?v=20';
+import {planForDate,activityStatus,statusLabel} from './sport-data.mjs?v=24';
+import {localDate} from './core.mjs?v=24';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function todayRoutineMarkup(db,date=localDate()){
  const activities=planForDate(db,date);
@@ -8,6 +8,6 @@ export function todayRoutineMarkup(db,date=localDate()){
 }
 export function mountTodayRoutine(getData,go){
  const dialog=document.createElement('dialog');dialog.id='todayRoutineDialog';dialog.setAttribute('aria-labelledby','todayRoutineTitle');dialog.innerHTML='<div class="row"><h2 id="todayRoutineTitle">Tu rutina de hoy</h2><button type="button" class="close" aria-label="Cerrar rutina">×</button></div><p id="todayRoutineDate" class="small"></p><div id="todayRoutineContent"></div><div class="toolbar"><button type="button" class="btn" id="todayRoutineRegister">Registrar actividad</button><button type="button" class="btn outline" id="todayRoutinePlan">Ir a Mi plan</button></div>';
- document.body.append(dialog);dialog.querySelector('.close').onclick=()=>dialog.close();document.getElementById('todayRoutineRegister').onclick=()=>{dialog.close();go('entrenar');};document.getElementById('todayRoutinePlan').onclick=()=>{dialog.close();go('plan');};
+ document.body.append(dialog);dialog.querySelector('.close').onclick=()=>dialog.close();document.getElementById('todayRoutineRegister').onclick=()=>{dialog.close();document.dispatchEvent(new CustomEvent('performance:open-session',{detail:{date:localDate()}}));};document.getElementById('todayRoutinePlan').onclick=()=>{dialog.close();go('plan');};
  document.addEventListener('click',e=>{if(!e.target.closest('[data-view-today-routine]'))return;document.getElementById('todayRoutineDate').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});document.getElementById('todayRoutineContent').innerHTML=todayRoutineMarkup(getData());dialog.showModal();});
 }

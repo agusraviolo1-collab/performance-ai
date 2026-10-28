@@ -1,4 +1,4 @@
-import {planForDate,addDays} from './sport-data.mjs?v=20';
+import {planForDate,addDays} from './sport-data.mjs?v=24';
 // Calendar-day arithmetic avoids daylight-saving changes affecting inactivity.
 const dateKey=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 const dayNumber=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(s||''))return NaN;const [y,m,d]=s.split('-').map(Number),t=new Date(Date.UTC(y,m-1,d));return t.toISOString().slice(0,10)===s?+t/86400000:NaN;};

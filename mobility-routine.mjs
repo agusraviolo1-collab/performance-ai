@@ -1,4 +1,4 @@
-import {YOGA} from './base.mjs?v=20';
+import {YOGA} from './base.mjs?v=24';
 export function migrateMobilityRoutine(data){
  if(data.mobilityRoutineMigrated)return data;
  const d=JSON.parse(JSON.stringify(data));d.mobilityRoutineMigrated=true;

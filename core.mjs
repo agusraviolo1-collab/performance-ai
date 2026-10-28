@@ -1,7 +1,7 @@
-import {FOCUS,monday,isDate,sessionDetails,normalizeGoals,normalizeWellness} from './sport-data.mjs?v=20';
-import {reminderDefaults,normalizeReminders} from './reminders.mjs?v=20';
-import {exercisePair} from './exercise-data.mjs?v=20';
-import { BASE, WEEK, SPORTS } from './base.mjs?v=20';
+import {FOCUS,monday,isDate,sessionDetails,normalizeGoals,normalizeWellness} from './sport-data.mjs?v=24';
+import {reminderDefaults,normalizeReminders} from './reminders.mjs?v=24';
+import {exercisePair} from './exercise-data.mjs?v=24';
+import { BASE, WEEK, SPORTS } from './base.mjs?v=24';
 export const KEY='pa_v6';
 export const clone=x=>JSON.parse(JSON.stringify(x));
 export const uid=()=>globalThis.crypto.randomUUID();
@@ -42,6 +42,9 @@ export function validate(raw){
  for(const key of ['sessions','marks','sports'])requireThat(Array.isArray(raw[key]),'Falta la lista '+key+'.');
  d.sports=[...new Set(raw.sports.map(s=>clean(s,60)).filter(Boolean))];requireThat(d.sports.length>0&&d.sports.length<=100,'Seleccioná entre 1 y 100 deportes.');
  d.sessions=raw.sessions.map(s=>{requireThat(s&&clean(s.sport)&&(s.duration===null||(Number.isFinite(s.duration)&&s.duration>0&&s.duration<=600))&&Number.isFinite(s.rpe)&&s.rpe>=1&&s.rpe<=10&&validDate(s.date),'Hay actividades con datos inválidos.');return {id:clean(s.id,80)||uid(),sport:clean(s.sport,60),duration:s.duration,rpe:s.rpe,date:s.date,note:clean(s.note,500),routineId:clean(s.routineId,80)||null,routineTitle:clean(s.routineTitle),...(s.focus&&Object.hasOwn(FOCUS,s.focus)?{focus:s.focus}:{}),...(s.details!=null?{details:sessionDetails(s.details,s.sport,s.duration)}:{}),...(s.planActivityId?{planActivityId:clean(s.planActivityId,80),planStatus:s.planStatus==='partial'?'partial':'complete'}:{})};});
+ // Recupera identificadores repetidos sin borrar ninguna sesión importada.
+ const reservedSessionIds=new Set(d.sessions.map(s=>s.id)),seenSessionIds=new Set();
+ for(const session of d.sessions){if(seenSessionIds.has(session.id)){const base=session.id.slice(0,60);let n=2,id;do{id=base+'-recovered-'+n++;}while(reservedSessionIds.has(id)||seenSessionIds.has(id));session.id=id;reservedSessionIds.add(id);}seenSessionIds.add(session.id);}
  d.marks=raw.marks.map(m=>{requireThat(m&&clean(m.exercise)&&Number.isFinite(m.weight)&&m.weight>=0&&m.weight<=1500&&Number.isInteger(m.reps)&&m.reps>=1&&m.reps<=1000&&validDate(m.date),'Hay marcas con datos inválidos.');return {exercise:clean(m.exercise),weight:m.weight,reps:m.reps,date:m.date};});
  if(raw.routines!==undefined){d.routines=raw.routines.length?normalizeRoutines(raw.routines):[];requireThat(new Set(d.routines.map(r=>r.id)).size===d.routines.length,'Hay identificadores de rutina repetidos.');}
  function normalizeWeek(input){requireThat(Array.isArray(input)&&input.length===7,'El plan debe tener siete días.');const ids=new Set();return input.map(day=>{requireThat(Array.isArray(day)&&day.length<=30,'Día del plan inválido.');return day.map(a=>{requireThat(a&&clean(a.title),'Actividad del plan inválida.');const id=clean(a.id,80)||uid();requireThat(!ids.has(id),'Actividad del plan repetida.');ids.add(id);return {id,title:clean(a.title),sport:clean(a.sport,60)||'Otros',routineId:d.routines.some(r=>r.id===a.routineId)?a.routineId:null,...plannedFields(a)};});});}
