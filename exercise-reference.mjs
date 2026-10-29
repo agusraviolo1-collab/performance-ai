@@ -1,4 +1,4 @@
-import {isDate,dateKey} from './sport-data.mjs?v=26';
+import {isDate,dateKey} from './sport-data.mjs?v=29';
 const key=value=>String(value??'').normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('es');
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function exerciseReferences(marks,exercise,today=dateKey()){

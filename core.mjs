@@ -1,7 +1,7 @@
-import {FOCUS,monday,isDate,sessionDetails,normalizeGoals,normalizeWellness} from './sport-data.mjs?v=25';
-import {reminderDefaults,normalizeReminders} from './reminders.mjs?v=25';
-import {exercisePair} from './exercise-data.mjs?v=25';
-import { BASE, WEEK, SPORTS } from './base.mjs?v=25';
+import {FOCUS,monday,isDate,sessionDetails,normalizeGoals,normalizeWellness} from './sport-data.mjs?v=29';
+import {reminderDefaults,normalizeReminders} from './reminders.mjs?v=29';
+import {exercisePair} from './exercise-data.mjs?v=29';
+import { BASE, WEEK, SPORTS } from './base.mjs?v=29';
 export const KEY='pa_v6';
 export const clone=x=>JSON.parse(JSON.stringify(x));
 export const uid=()=>globalThis.crypto.randomUUID();
