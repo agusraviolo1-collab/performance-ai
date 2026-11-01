@@ -1,6 +1,6 @@
-import {exerciseReferencesMarkup} from './exercise-reference.mjs?v=29';
-import {planForDate,activityStatus,statusLabel} from './sport-data.mjs?v=29';
-import {localDate} from './core.mjs?v=29';
+import {exerciseReferencesMarkup} from './exercise-reference.mjs?v=31';
+import {planForDate,activityStatus,statusLabel} from './sport-data.mjs?v=31';
+import {localDate} from './core.mjs?v=31';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function todayRoutineMarkup(db,date=localDate()){
  const activities=planForDate(db,date);
