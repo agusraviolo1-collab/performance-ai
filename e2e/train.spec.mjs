@@ -98,6 +98,8 @@ test('marcas plegables por ejercicio y buscador tolerante a errores con teclado 
  await page.locator('#markWeight').fill('60');await page.locator('#markReps').fill('8');await page.locator('#markForm button').filter({hasText:'Guardar marca'}).click();
  const data=await stored(page);expect(data.marks).toHaveLength(4);expect(data.marks.at(-1).exercise).toBe('Press banca');expect(data.marks.slice(0,3).map(m=>m.weight)).toEqual([50,55,20]);
  await page.locator('#toggleExerciseSuggestions').click();await expect(page.getByRole('option',{name:'Hip thrust',exact:true})).toBeVisible();
+ await page.locator('#toggleExerciseSuggestions').click();await expect(page.locator('#exerciseSuggestions')).toBeHidden();
+ await page.locator('#toggleExerciseSuggestions').click();await expect(page.locator('#exerciseSuggestions')).toBeVisible();
  await input.fill('nombre nuevo zzq');await expect(page.locator('#exerciseSuggestions')).toContainText('Sin coincidencias');await input.press('Escape');await expect(page.locator('#exerciseSuggestions')).toBeHidden();await expect(input).toHaveValue('nombre nuevo zzq');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:test.info().outputPath('marcas-mobile.png'),fullPage:false});
