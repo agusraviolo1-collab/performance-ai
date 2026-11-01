@@ -1,0 +1,16 @@
+/* Entrenar: una acción principal, opciones extra progresivas. */
+#entrenar{max-width:720px;margin-inline:auto}
+#entrenar>h1{margin-bottom:5px}
+#entrenar>p.small{margin-bottom:18px;line-height:1.5}
+#sessionForm{padding:18px;border-radius:20px}
+#suggestedActivities{margin:12px 0}
+#suggestedActivities .suggested-activity{min-height:58px;align-items:center;border-radius:14px;margin:8px 0;box-shadow:none}
+#sessionOtherChoices{border:1px solid #dce5f2;border-radius:14px;margin:14px 0;background:#f8faff}
+#sessionOtherChoices>summary{font-weight:700;color:#2455a0;padding:15px;list-style:none;cursor:pointer;min-height:48px}
+#sessionOtherChoices>summary::-webkit-details-marker{display:none}
+#sessionOtherChoices[open]{padding:0 14px 14px;background:#fff}
+#sessionOtherChoices[open]>summary{padding-left:0;padding-right:0;border-bottom:1px solid #e2eaf3;margin-bottom:10px}
+#sessionForm .rpe-guide{margin-top:14px}
+#saveSessionButton{min-height:48px;flex:1}
+#entrenar #sessionList{max-height:420px;overflow:auto}
+@media(max-width:600px){#entrenar{padding-bottom:20px}#sessionForm{padding:14px}#entrenar .toolbar{gap:8px}#saveSessionButton{width:100%}}
