@@ -1,5 +1,5 @@
-import {gymExercises,searchExercises,markHistory} from './strength-data.mjs?v=31';
-import {comparableMarks} from './training-feedback.mjs?v=31';
+import {gymExercises,searchExercises,markHistory} from './strength-data.mjs?v=33';
+import {comparableMarks} from './training-feedback.mjs?v=33';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function mountStrength(getData){
  const input=document.getElementById('markExercise'),list=document.getElementById('exerciseSuggestions'),toggle=document.getElementById('toggleExerciseSuggestions'),status=document.getElementById('exerciseSearchStatus');let choices=[],active=-1;

@@ -1,5 +1,5 @@
-import {localDate} from './core.mjs?v=31';
-import {monday,addDays,isDate,planForDate,activityStatus,durationCoverage} from './sport-data.mjs?v=31';
+import {localDate} from './core.mjs?v=33';
+import {monday,addDays,isDate,planForDate,activityStatus,durationCoverage} from './sport-data.mjs?v=33';
 
 // Solo describe los registros existentes; no estima duración ni carga faltante.
 export function weeklyFeedback(db,today=localDate()){

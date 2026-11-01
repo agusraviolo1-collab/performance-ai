@@ -16,6 +16,7 @@ test.beforeEach(async({page})=>{
  await page.goto('/');await page.locator('[data-tab="entrenar"]').click();
 });
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('pa_v6')));
+async function saveExtra(page,rpe='6'){await page.locator('#extraRpe').fill(rpe);await page.locator('#saveExtraSession').click();await expect(page.locator('#extraSessionDialog')).not.toBeVisible();}
 async function save(page,rpe='6'){await page.locator('#rpeScale button').filter({hasText:new RegExp('^'+rpe+'$')}).click();await page.locator('#saveSessionButton').click();await expect(page.locator('#sessionSavedSummary')).toBeVisible();}
 test('separa pendientes e historial, guarda y edita sin duplicar ni perder datos',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -28,9 +29,9 @@ test('separa pendientes e historial, guarda y edita sin duplicar ni perder datos
  await page.locator('[data-next-session]').click();
  await expect(page.locator('[data-suggested-activity]')).toHaveCount(0);
  await expect(page.locator('#sessionPlanLink')).toHaveValue('');
- await page.locator('#activityRoutine').selectOption('r');await save(page,'7');
+ await page.locator('#extraRoutine').selectOption('r');await saveExtra(page,'7');
  let data=await stored(page);expect(data.sessions).toHaveLength(5);expect(data.sessions.at(-1).planUnlinked).toBe(true);expect(data.sessions.at(-1).planActivityId).toBeUndefined();
- await page.locator('[data-next-session]').click();await page.locator('#activityRoutine').selectOption('r');await save(page,'4');
+ await page.locator('[data-next-session]').click();await page.locator('#extraRoutine').selectOption('r');await saveExtra(page,'4');
  data=await stored(page);expect(data.sessions).toHaveLength(6);expect(data.sessions.filter(s=>s.planUnlinked)).toHaveLength(2);
  await page.locator('[data-edit-session="partial-s"]').click();
  await page.locator('#sessionPlanStatus').selectOption('complete');await save(page,'8');
@@ -43,18 +44,15 @@ test('separa pendientes e historial, guarda y edita sin duplicar ni perder datos
  for(const name of ['inicio','plan','progreso','ajustes']){await page.locator(`[data-tab="${name}"]`).click();await expect(page.locator('#'+name)).toBeVisible();}
  expect(errors).toEqual([]);
 });
-test('extra directo conserva plan pendiente y protege borrador al cambiar de destino',async({page})=>{
- const initial=await stored(page);
- await page.locator('#addExtraSession').click();await expect(page.locator('#sessionPlanLink')).toHaveValue('');
- await page.locator('#activityRoutine').selectOption('r');await page.locator('#activityNote').fill('Extra de prueba');
- await page.locator('[data-suggested-activity="pending"]').click();
- await expect(page.locator('#sessionDiscardPanel')).toBeVisible();await page.locator('[data-keep-session]').click();
- await expect(page.locator('#activityNote')).toHaveValue('Extra de prueba');await expect(page.locator('#sessionPlanLink')).toHaveValue('');
- await save(page);
+test('extra abre un pop-up y conserva el borrador del plan al guardar o cancelar',async({page})=>{
+ const initial=await stored(page);await page.locator('#activityNote').fill('Borrador del plan');
+ await page.locator('#addExtraSession').click();await expect(page.locator('#extraSessionDialog')).toBeVisible();
+ await page.locator('#extraRoutine').selectOption('r');await page.locator('#extraNote').fill('Extra de prueba');
+ await page.locator('[data-close-extra]').first().click();await expect(page.locator('#activityNote')).toHaveValue('Borrador del plan');
+ await page.locator('#addExtraSession').click();await page.locator('#extraRoutine').selectOption('r');await page.locator('#extraNote').fill('Extra de prueba');
+ await page.screenshot({path:test.info().outputPath('extra-popup.png'),fullPage:false});await saveExtra(page);
  const data=await stored(page);expect(data.week).toEqual(initial.week);expect(data.sessions.slice(0,3)).toEqual(initial.sessions);expect(data.sessions.at(-1)).toMatchObject({planUnlinked:true,routineId:'r',note:'Extra de prueba'});
- await page.locator('[data-next-session]').click();await expect(page.locator('[data-suggested-activity="pending"]')).toBeVisible();
- await page.locator('#activityNote').fill('Descartar');await page.locator('[data-suggested-activity="pending"]').click();await page.locator('[data-discard-session]').click();
- await expect(page.locator('#sessionPlanLink')).toHaveValue('pending');await expect(page.locator('#activityNote')).toHaveValue('');
+ await expect(page.locator('#activityNote')).toHaveValue('Borrador del plan');await expect(page.locator('#sessionPlanLink')).toHaveValue('pending');
  await save(page);expect((await stored(page)).sessions).toHaveLength(5);
 });
 test('instalación vacía permite extra libre y fecha retrospectiva sin inventar plan',async({page})=>{
@@ -112,4 +110,42 @@ test('Perfil reemplaza enfoque deportivo y la vista general conserva datos de us
  await expect(page.locator('[data-tab="ajustes"]')).toHaveText('Perfil');await page.locator('[data-tab="ajustes"]').click();await expect(page.locator('#ajustes h1')).toHaveText('Perfil');await expect(page.locator('#settingsFocus')).toHaveCount(0);
  await page.locator('#editProfile').click();await expect(page.locator('#profileDialog')).toBeVisible();await page.locator('#cancelProfile').click();
  const after=await stored(page);expect(after.sessions).toEqual(before.sessions);expect(after.goals).toEqual(before.goals);expect(after.routines).toEqual(before.routines);
+});
+test('Mi plan permite marcar realización retroactiva sin crear ni borrar entrenamientos',async({page})=>{
+ const before=await stored(page);await page.locator('[data-tab="plan"]').click();await page.locator('[data-week-day="6"]>summary').click();
+ const check=page.locator('[data-plan-check="pending"]');await check.selectOption('complete');
+ let data=await stored(page);expect(data.sessions).toEqual(before.sessions);expect(data.planChecks).toEqual([{date,activityId:'pending',status:'complete'}]);
+ await check.selectOption('missed');await expect(check).toHaveValue('missed');await page.reload();await page.locator('[data-tab="plan"]').click();await page.locator('[data-week-day="6"]>summary').click();await expect(check).toHaveValue('missed');
+ await page.screenshot({path:test.info().outputPath('plan-realizacion.png'),fullPage:false});
+ await check.selectOption('pending');expect((await stored(page)).sessions).toEqual(before.sessions);expect((await stored(page)).planChecks).toEqual([]);
+ await page.locator('#previousPlanWeek').click();await page.locator('#addActivity').click();await page.locator('#planDay').selectOption('6');await page.locator('#planTitle').fill('Actividad del domingo anterior');await page.locator('#activityForm button').filter({hasText:'Guardar actividad del plan'}).click();if(await page.locator('[data-week-day="6"]').getAttribute('open')===null)await page.locator('[data-week-day="6"]>summary').click();await page.locator('[data-plan-check]').selectOption('complete');data=await stored(page);expect(data.planChecks[0]).toMatchObject({date:'2026-10-25',status:'complete'});expect(data.sessions).toEqual(before.sessions);await page.locator('#currentPlanWeek').click();
+ await page.locator('#nextPlanWeek').click();await page.locator('#copyPreviousPlanWeek').click();await page.locator('[data-week-day="6"]>summary').click();await expect(page.locator('[data-plan-check="pending"]')).toHaveCount(0);await expect(page.locator('[data-plan-check]').first()).toBeDisabled();
+});
+test('editor de plan usa un solo nombre, oculta previsiones y conserva datos previos',async({page})=>{
+ await page.evaluate(()=>{const d=JSON.parse(localStorage.getItem('pa_v6'));d.week[6][2].plannedDuration=45;d.week[6][2].plannedRpe=6;localStorage.setItem('pa_v6',JSON.stringify(d));});await page.reload();await page.locator('[data-tab="plan"]').click();await page.locator('[data-week-day="6"]>summary').click();
+ await page.locator('[data-edit-activity="pending"]').click();await expect(page.locator('#planRoutine')).toHaveCount(0);await expect(page.locator('#planDuration')).toHaveCount(0);await expect(page.locator('#planRpe')).toHaveCount(0);
+ await page.locator('#activityForm button').filter({hasText:'Guardar actividad del plan'}).click();let data=await stored(page);expect(data.week[6].find(a=>a.id==='pending')).toMatchObject({routineId:'r',plannedDuration:45,plannedRpe:6});
+ await page.locator('#addActivity').click();await page.locator('#planTitle').fill('Fuerza');await page.locator('#activityForm button').filter({hasText:'Guardar actividad del plan'}).click();data=await stored(page);expect(data.week[0].at(-1)).toMatchObject({title:'Fuerza',routineId:'r'});
+});
+test('rutinas sin ejercicios se crean, se editan y conservan los ejercicios de otras rutinas',async({page})=>{
+ const before=await stored(page);await page.locator('[data-tab="plan"]').click();await page.locator('#addRoutine').click();await expect(page.locator('#exerciseEditor .exercise-row')).toHaveCount(0);await page.locator('#routineTitle').fill('Rodaje libre');await page.locator('#routineSport').selectOption('Running');await page.locator('#routineForm button').filter({hasText:'Guardar rutina'}).click();
+ let data=await stored(page);expect(data.routines.at(-1)).toMatchObject({title:'Rodaje libre',sport:'Running',ex:[]});expect(data.routines.slice(0,2)).toEqual(before.routines);
+ const id=data.routines.at(-1).id;await page.locator('[data-routine-id="'+id+'"] summary').click();await page.locator('[data-edit-routine="'+id+'"]').click();await page.locator('#routineWarm').fill('Ritmo cómodo');await page.locator('#routineForm button').filter({hasText:'Guardar rutina'}).click();await page.reload();data=await stored(page);expect(data.routines.at(-1)).toMatchObject({warm:'Ritmo cómodo',ex:[]});
+});
+test('extra conserva borrador al cerrar y permite descartarlo sin perder guardados',async({page})=>{
+ await page.locator('#addExtraSession').click();await page.locator('#extraNote').fill('Retomar este borrador');await page.locator('#extraRpe').fill('5.5');await page.keyboard.press('Escape');await page.locator('#addExtraSession').click();await expect(page.locator('#extraNote')).toHaveValue('Retomar este borrador');await expect(page.locator('#extraRpe')).toHaveValue('5.5');await expect(page.locator('#extraDraftHint')).toBeVisible();
+ await page.locator('[data-discard-extra]').click();await expect(page.locator('#extraNote')).toHaveValue('');await expect(page.locator('#extraRpe')).toHaveValue('');expect((await stored(page)).sessions).toHaveLength(3);await saveExtra(page);await page.locator('#addExtraSession').click();await expect(page.locator('#extraRpe')).toHaveValue('');
+});
+test('extra explica esfuerzo y permite agregar deporte sin perder comentario y RPE',async({page})=>{
+ await page.locator('#addExtraSession').click();await expect(page.locator('#extraSessionDialog')).toContainText('1 · Muy suave');await expect(page.locator('#extraSessionDialog')).toContainText('toda la sesión');await page.locator('#extraNote').fill('Mi deporte');await page.locator('#extraRpe').fill('6');await page.locator('[data-add-extra-sport]').click();await page.locator('#extraSportName').fill('Tenis');await page.locator('[data-save-extra-sport]').click();await expect(page.locator('#extraSport')).toHaveValue('Tenis');await expect(page.locator('#extraNote')).toHaveValue('Mi deporte');await expect(page.locator('#extraRpe')).toHaveValue('6');await saveExtra(page);expect((await stored(page)).sessions.at(-1)).toMatchObject({sport:'Tenis',note:'Mi deporte',rpe:6,planUnlinked:true});
+});
+test('Mi plan explica realización y permite registrar esfuerzo desde el día seleccionado',async({page})=>{
+ await page.locator('[data-tab="plan"]').click();await page.locator('[data-week-day="6"]>summary').click();await page.locator('[data-plan-check="pending"]').selectOption('complete');await expect(page.locator('#weekList')).toContainText('Cambia el plan; conserva tus registros');await page.locator('#weekList [data-register-planned="pending"]').click();await expect(page.locator('#entrenar')).toBeVisible();await expect(page.locator('#sessionPlanLink')).toHaveValue('pending');await expect(page.locator('#activityDate')).toHaveValue(date);await save(page);await page.locator('[data-tab="plan"]').click();await expect(page.locator('#weekList [data-register-planned="pending"]')).toHaveText('Ver / editar registro');expect((await stored(page)).planChecks).toEqual([]);await expect(page.locator('#notice')).toBeHidden();
+});
+test('lista explícita de rutinas e Inicio libre se descubren sin conocer nombres',async({page})=>{
+ await page.locator('[data-tab="plan"]').click();await page.locator('#addActivity').click();await page.locator('#togglePlanRoutines').click();await page.locator('[data-plan-routine]').filter({hasText:'Fuerza'}).first().click();await expect(page.locator('#planTitle')).toHaveValue('Fuerza');await page.locator('#activityForm button').filter({hasText:'Guardar actividad del plan'}).click();expect((await stored(page)).week[0].at(-1).routineId).toBe('r');await expect(page.locator('#planWeekHelp')).toContainText('Para copiar');
+ await page.evaluate(()=>{const d=JSON.parse(localStorage.getItem('pa_v6'));d.routines=[];d.week=Array.from({length:7},()=>[]);d.planWeeks={};d.sessions=[];localStorage.setItem('pa_v6',JSON.stringify(d));});await page.reload();await expect(page.locator('#blankStartHint')).toContainText('actividad libre');await page.locator('#startFreeActivity').click();await expect(page.locator('#activityDialog')).toBeVisible();await expect(page.locator('#planDay')).toHaveValue('6');
+});
+test('corregir una semana inválida limpia su error sin dejar un aviso obsoleto',async({page})=>{
+ await page.locator('[data-tab="plan"]').click();await page.locator('#planWeekPicker').evaluate(input=>{input.value='2026-11-03';input.dispatchEvent(new Event('change',{bubbles:true}));});await expect(page.locator('#notice')).toContainText('Elegí el lunes');await page.locator('#nextPlanWeek').click();await expect(page.locator('#planWeekPicker')).toHaveValue('2026-11-02');await expect(page.locator('#notice')).toBeHidden();await expect(page.locator('#planCalendarStatus')).toHaveText('Semana actualizada.');
 });

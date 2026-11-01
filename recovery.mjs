@@ -1,4 +1,4 @@
-import {addDays,dateKey,isDate} from './sport-data.mjs?v=31';
+import {addDays,dateKey,isDate} from './sport-data.mjs?v=33';
 const mean=rows=>rows.length?Math.round(rows.reduce((n,x)=>n+x,0)/rows.length*10)/10:null;
 export function recoverySummary(db,today=dateKey()){
  if(!isDate(today))throw Error('Fecha de análisis inválida.');

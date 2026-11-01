@@ -14,3 +14,7 @@
 #saveSessionButton{min-height:48px;flex:1}
 #entrenar #sessionList{max-height:420px;overflow:auto}
 @media(max-width:600px){#entrenar{padding-bottom:20px}#sessionForm{padding:14px}#entrenar .toolbar{gap:8px}#saveSessionButton{width:100%}}
+
+#extraSessionDialog{width:min(560px,calc(100% - 24px));max-height:90dvh;overflow:auto;padding:18px}#extraSessionDialog fieldset{min-inline-size:0;margin:14px 0;padding:12px}#extraSessionDialog input,#extraSessionDialog select{max-width:100%;min-width:0;font-size:16px}#extraSessionDialog .toolbar{display:flex;flex-wrap:wrap;gap:8px}#extraSessionDialog .btn{min-height:44px}.plan-check-label{display:block;max-width:300px;font-size:12px}.plan-check-label select{min-height:44px;font-size:16px}#extraRpeScale [aria-pressed=true]{background:var(--blue);color:#fff}
+
+.plan-check-label .subtle{display:block;font-size:11px;line-height:1.4;margin:4px 0 8px}#planWeekHelp{font-size:11px;line-height:1.4;margin:4px 0 8px}#extraDraftHint{background:#eef4ff;padding:8px;border-radius:8px}#planTitle{margin-bottom:6px}#togglePlanRoutines{min-height:44px;margin:0 0 4px}
