@@ -1,6 +1,16 @@
 # Performance AI
 
+## Entrenar, marcas e interfaz compacta (V32)
+
+Entrenar ofrece solo actividades pendientes. Las completas y parciales se editan desde Historial reciente; no se borran ni fusionan registros existentes. Agregar entrenamiento extra abre deporte y rutina sin vínculo al plan. Los extras nuevos conservan `planUnlinked:true` en almacenamiento y respaldos, pueden repetir rutina y no completan actividades planificadas. Los registros antiguos sin ese campo mantienen su inferencia de cumplimiento por rutina y fecha. Un vínculo explícito sigue protegiéndose contra duplicados.
+
+El chequeo de Inicio ocupa una fila; su detalle permanece en Progreso. Mi plan muestra Copiar semana anterior encima de los días (habilitado para semanas vacías con una semana anterior disponible), conserva Deshacer y usa Ir a semana actual para navegar, sin modificar cumplimiento. La semana tiene filas compactas con controles táctiles de al menos 44 px. Se retiró la frase «Tu plan, a tu manera».
+
+Verificación reproducible: `npm ci`, `npm test`, `npx playwright install chromium webkit`, `npm run test:mobile`. La suite móvil usa perfiles Pixel 7 e iPhone 13 en Chromium y WebKit con datos ficticios aislados. Comprueba guardar, editar, repetir extras, persistencia, conservación de detalles deportivos, borradores, fechas anteriores, instalación vacía, navegación, copiar/deshacer semanas, tamaño de tarjetas y ausencia de desbordamiento. No sustituye una prueba en un iPhone físico. GitHub Actions ejecuta ambas suites y guarda capturas de la interfaz.
+
 Aplicación personal para editar el plan semanal y las rutinas, registrar actividades por rutina, agregar deportes y revisar cargas.
+
+Las marcas de fuerza tienen historial plegable por ejercicio y un buscador con sugerencias de las rutinas de gimnasio, marcas anteriores y catálogo básico. La búsqueda ignora acentos y tolera errores de escritura; el usuario elige una sugerencia, sin renombrar marcas históricas. Perfil reemplaza Deportes y datos y no ofrece filtros de enfoque; la vista general incluye todos los deportes y conserva objetivos y etiquetas históricas en los respaldos. Se retiró el acceso al perfil de la barra superior.
 
 ## Uso
 
