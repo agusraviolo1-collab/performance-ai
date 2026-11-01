@@ -1,5 +1,15 @@
 # Performance AI
 
+## Plan simplificado y realización diaria (V33)
+
+Agregar actividad usa un solo campo Actividad o rutina. Seleccionar un nombre de rutina vincula esa rutina; una actividad libre admite texto propio. Editar sin cambiar el nombre conserva los vínculos y títulos anteriores. Duración, RPE y carga previstos ya no se muestran en el editor ni en los días; los valores anteriores se conservan en los respaldos.
+
+Cada actividad de hoy o de días anteriores tiene una selección Sí, la hice / No la hice / Sin marcar desde Mi plan, también en semanas archivadas. La selección se guarda como `planChecks` por fecha e identificador de actividad y modifica el cumplimiento, sin crear ni eliminar sesiones o inventar esfuerzo y minutos. Sin marcar recupera el estado de las sesiones existentes. Guardar un registro vinculado actualiza su cumplimiento y retira la marca manual de esa actividad. No se puede marcar una fecha futura ni un descanso.
+
+Agregar entrenamiento extra abre un diálogo independiente que conserva el borrador del plan. Permite fecha, deporte, rutina opcional, esfuerzo y comentario; siempre guarda sin vincular. Las rutinas pueden tener cero ejercicios y conservan sus indicaciones al guardar, respaldar y compartir.
+
+Se realizó una revisión de UX en dos rondas con dos perfiles de usuario simulados (experto y principiante) y un diseñador. Se corrigieron la conservación del borrador del extra al cerrar, las referencias de RPE, el alta de deportes dentro del diálogo, el acceso al registro desde cada día, la explicación de realización frente a sesiones, el selector visible de rutinas, los estados vacíos y las ayudas de semana. Los avisos de éxito se retiran al navegar y el error de semana se retira cuando se corrige. Las pruebas de ambos perfiles incluyeron importación JSON/CSV/TXT, reemplazo y deshacer, respaldos, informes y enlaces, con datos ficticios aislados. No equivalen a investigación con personas reales ni a validación en teléfonos físicos.
+
 ## Entrenar, marcas e interfaz compacta (V32)
 
 Entrenar ofrece solo actividades pendientes. Las completas y parciales se editan desde Historial reciente; no se borran ni fusionan registros existentes. Agregar entrenamiento extra abre deporte y rutina sin vínculo al plan. Los extras nuevos conservan `planUnlinked:true` en almacenamiento y respaldos, pueden repetir rutina y no completan actividades planificadas. Los registros antiguos sin ese campo mantienen su inferencia de cumplimiento por rutina y fecha. Un vínculo explícito sigue protegiéndose contra duplicados.

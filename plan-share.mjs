@@ -1,5 +1,5 @@
-import {localDate,validDate,clean,plannedFields} from './core.mjs?v=31';
-import {durationCoverage} from './sport-data.mjs?v=31';
+import {localDate,validDate,clean,plannedFields} from './core.mjs?v=33';
+import {durationCoverage} from './sport-data.mjs?v=33';
 const DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 export const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const round=n=>Math.round(n*10)/10;
@@ -16,4 +16,4 @@ export function buildPlanPackage(db,{weekStart=nextMonday(),includeRoutines=true
  return result;
 }
 
-export {planText,planFragment,planHtml,planCsv,planDocumentCss} from './coach-sheet.mjs?v=31';
+export {planText,planFragment,planHtml,planCsv,planDocumentCss} from './coach-sheet.mjs?v=33';

@@ -1,5 +1,5 @@
-import {recoverySummary} from './recovery.mjs?v=31';
-import {dateKey} from './sport-data.mjs?v=31';
+import {recoverySummary} from './recovery.mjs?v=33';
+import {dateKey} from './sport-data.mjs?v=33';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),fmt=n=>n==null?'—':Number(n).toLocaleString('es-AR',{maximumFractionDigits:1});
 export function mountRecovery(getData,openWellness){
  const home=document.createElement('section');home.className='card recovery-home';home.id='dailyRecovery';home.setAttribute('aria-label','Chequeo diario y recuperación');document.getElementById('inicio').prepend(home);

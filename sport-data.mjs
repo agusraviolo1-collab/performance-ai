@@ -29,10 +29,11 @@ export function sportSummary(db,{focus=db.focus||'general',month=dateKey().slice
  return {focus,month,sessions,...coverage,minutes,played,matches,untyped,withDistance,categories:[...categories.values()].map(c=>({...c,sessions:sessions.filter(s=>s.details?.segments?s.details.segments.some(part=>part.discipline===c.name):((s.details?.football?({field:"Campo",match:"Partidos",gym:"Fuerza",recovery:"Recuperación"})[s.details.football.type]:s.sport)===c.name)).length,minutes:c.timedRecords?c.minutes:null})),weeks,partial:month===today.slice(0,7),cutoff};
 }
 export function completionFor(db,date){const p=progressFor(db,date);return {planned:p.planned,completed:p.completed};}
-export function dayPlanLabel(db,date){const activities=planForDate(db,date);if(!activities.length)return 'Tocá para agregar';const p=progressFor(db,date);return activities.length+' actividad'+(activities.length===1?'':'es')+(p.completed?' · '+p.completed+' completa'+(p.completed===1?'':'s'):'')+(p.partial?' · '+p.partial+' parcial'+(p.partial===1?'':'es'):'');}
+export function dayPlanLabel(db,date){const activities=planForDate(db,date);if(!activities.length)return 'Tocá para agregar';const p=progressFor(db,date),missed=activities.filter(a=>activityStatus(db,a,date)==='missed').length;return activities.length+' actividad'+(activities.length===1?'':'es')+(p.completed?' · '+p.completed+' completa'+(p.completed===1?'':'s'):'')+(p.partial?' · '+p.partial+' parcial'+(p.partial===1?'':'es'):'')+(missed?' · '+missed+' no realizada'+(missed===1?'':'s'):'');}
 export function duplicateSession(sessions,candidate,excludeId=null){return sessions.find(s=>s.id!==excludeId&&s.date===candidate.date&&((!candidate.planUnlinked&&!s.planUnlinked&&candidate.routineId&&s.routineId===candidate.routineId)||(candidate.planActivityId&&s.planActivityId===candidate.planActivityId)))||null;}
 export function activityStatus(db,activity,date){
  if(activity.isRest)return 'rest';
+ const check=db.planChecks?.find(c=>c.date===date&&c.activityId===activity.id);if(check)return check.status;
  const owner=activity.routineId?planForDate(db,date).find(a=>!a.isRest&&a.routineId===activity.routineId&&a.sport===activity.sport):null;
  const sessions=db.sessions.filter(s=>s.date===date&&(s.planActivityId?s.planActivityId===activity.id:!s.planUnlinked&&activity.routineId&&owner?.id===activity.id&&s.routineId===activity.routineId&&s.sport===activity.sport));
  return sessions.some(s=>s.planStatus!=='partial')?'complete':sessions.length?'partial':'pending';
@@ -40,4 +41,4 @@ export function activityStatus(db,activity,date){
 // Las actividades con registro (también las parciales) se editan desde el historial.
 export function pendingActivities(db,date){return planForDate(db,date).filter(a=>!a.isRest&&activityStatus(db,a,date)==='pending');}
 export function progressFor(db,date){const activities=planForDate(db,date).filter(a=>!a.isRest),states=activities.map(a=>activityStatus(db,a,date)),completed=states.filter(s=>s==='complete').length,partial=states.filter(s=>s==='partial').length;return {planned:activities.length,completed,partial,allComplete:activities.length>0&&completed===activities.length,label:activities.length?(completed===activities.length?'✓ ¡Completaste todas las actividades del día!':`${completed?'✓ ':''}${completed} de ${activities.length} actividades completas${partial?' · '+partial+' parcial(es)':''}`):'Sin actividades programadas'};}
-export const statusLabel=status=>({complete:'✓ Completada',partial:'◐ Parcial',rest:'Descanso',pending:'Pendiente'})[status];
+export const statusLabel=status=>({complete:'✓ Completada',partial:'◐ Parcial',rest:'Descanso',missed:'No realizada',pending:'Pendiente'})[status];
