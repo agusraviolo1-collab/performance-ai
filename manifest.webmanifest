@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Performance AI",
-  "short_name": "Performance AI",
+  "name": "Performance",
+  "short_name": "Performance",
   "lang": "es",
   "description": "Tu plan, tus entrenamientos y tus informes de progreso.",
   "start_url": "./",
